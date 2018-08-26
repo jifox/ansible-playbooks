@@ -1,0 +1,183 @@
+---
+# file:  fujo.cisco_backup/tasks/cisco_ios_backup.yml
+
+- name: Fail if not an Cisco IOS device
+  fail:
+    msg: "This playbook supports only IOS devices. Tested with Catalyst 6800 and Catalyst 9300"
+  when:
+    - ansible_network_os != 'ios'
+
+
+##########################################################################
+# Setup Environment
+##########################################################################
+
+- name: Gather facts from switch
+  napalm_get_facts:
+    hostname: "{{ ansible_host  }}"
+    username: "{{ ansible_user }}"
+    dev_os: "{{ ansible_network_os }}"
+    password: "{{ ansible_ssh_pass }}"
+    filter:
+      - "facts"
+      - "snmp_information"
+  changed_when: false
+  register:
+    np_facts
+  check_mode: no
+
+- name: Set facts for playbook
+  block:
+    - name:  set_fact - backup_file_dir
+      local_action:
+        module: set_fact
+        backup_file_dir: "{{ backup_dir | default('~/backups') }}/{{ inventory_hostname }}"
+      changed_when: false
+    - name:  set_fact - backup_file_base_name
+      local_action:
+        module: set_fact
+        backup_file_base_name: "{{ backup_file_dir }}/{{ inventory_hostname }}"
+      changed_when: false
+    - name:  set_fact - backup_file_name
+      local_action:
+        module: set_fact
+        backup_file_name: "{{ backup_file_base_name }}_{{ lookup('pipe','date +%Y-%m-%d_%H-%M-%S') }}.bck"
+      changed_when: false
+  check_mode: no
+
+- name: Display Switch
+  local_action:
+    module: debug
+    msg: "   ({{ ansible_host }}) - {{ np_facts.ansible_facts.napalm_snmp_information.location  }}:\n   {{ np_facts.ansible_facts.napalm_facts.os_version }}"
+  check_mode: no
+  tags: [print_action]
+
+# Create Backup Directory if not exists
+- name: Ensure that the backup directory exists set the group (need rw right)
+  local_action:
+    module: file
+    path: "{{ backup_file_dir }}"
+    state: directory
+    recurse: yes
+    group: "{{ backup_files_group }}"
+  run_once: yes
+  when:
+    - backup_files_group != ""
+- name: Ensure that the backup directory exists (need rw right)
+  local_action:
+    module: file
+    path: "{{ backup_file_dir }}"
+    state: directory
+    recurse: yes
+  run_once: yes
+  when:
+    - backup_files_group == ""
+
+
+##########################################################################
+# Read in the latest backup file if exists
+##########################################################################
+
+# Get the latest backup file in backup directory. (found: existing_backups.matched > 0)
+- name: "Read directory listing of: {{ backup_dir }}/[hostname]"
+  local_action:
+    module: find
+    path: "{{ backup_file_dir }}"
+    patterns: "*.bck"
+  register: existing_backups
+  check_mode: no
+
+- name: Get newest existing backup-file
+  local_action:
+    module: set_fact
+    latest_backup_file: "{{ existing_backups.files | sort(attribute='mtime',reverse=true) | first }}"
+  when:
+    - existing_backups.matched > 0
+  check_mode: no
+
+- name: Store latest backup into backup_config_content
+  local_action:
+    module: set_fact
+    backup_config_content: "{{ lookup('file', latest_backup_file.path) }}"
+  when:
+    - existing_backups.matched > 0
+
+
+##########################################################################
+# Store switch's running-config into running_config_content and
+# check for vlaid content.
+##########################################################################
+
+- import_tasks: "tasks_read_running_config.yml"
+
+
+##########################################################################
+# Compare running-config with latest-backup
+##########################################################################
+
+- name: Calculate Checksums of backup and running config
+  local_action:
+    module: set_fact
+    hash_run: "{{ running_config_content | hash('sha1') }}"
+    hash_backup: "{{ backup_config_content | hash('sha1') }}"
+  when:
+    - existing_backups.matched > 0
+
+- name: Calculate Checksums of backup and running config
+  local_action:
+    module: set_fact
+    backup_needed: "{{ existing_backups.matched == 0 or hash_run != hash_backup }}"
+
+
+##########################################################################
+# Save running-config to startup-config if differences are detected
+##########################################################################
+
+- name: Save modified running-config to switch's startup-config
+  ios_config:
+    save_when: modified
+    defaults: false
+  register: save_when_was_modified
+  when:
+    - backup_needed
+
+
+##########################################################################
+# Read in the switch's running-config into 'running_config_content' again
+# This step is neccessary because saving the running config will change
+# the running-config (update last saved time)
+##########################################################################
+
+- import_tasks: "tasks_read_running_config.yml"
+  when:
+    - backup_needed
+
+- name: Display Backup Action
+  debug:
+    msg: "Backup Configuration executed. Backup-File: {{ backup_file_name }}"
+  when:
+    - backup_needed
+  tags: [print_action]
+
+
+##########################################################################
+# Copy running-config to backup directory
+##########################################################################
+
+- name: "Copy running-config to {{ backup_file_name }}"
+  local_action:
+    module: copy
+    content: "{{ running_config_content }}"
+    dest: "{{ backup_file_name }}"
+    group: "{{ backup_files_group }}"
+  when:
+    - backup_needed
+    - backup_files_group != ""
+- name: "Copy running-config to {{ backup_file_name }}"
+  local_action:
+    module: copy
+    content: "{{ running_config_content }}"
+    dest: "{{ backup_file_name }}"
+  when:
+    - backup_needed
+    - backup_files_group == ""

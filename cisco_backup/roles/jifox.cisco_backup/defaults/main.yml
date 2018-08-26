@@ -1,0 +1,9 @@
+---
+# defaults file for fujo.cisco_backup.yml
+
+# Base Directory where all the backups are stored. a subdirectory will be created for every host
+backup_dir: /tmp/backups
+
+# backup_files_group can be defined if the linux group should be set by the playbook
+# if it is set to "" the group of the backup files will not be altered
+backup_files_group: ""

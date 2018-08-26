@@ -1,0 +1,15 @@
+galaxy_info:
+  author: Josef Fuchs
+  description: |
+    This rule stores switch (Cisco ios) config backups backup-files to a given backup directory when changes between the last saved configuration are detected. In that case the running-config will also be saved to startup-config on the switch.
+    Ansible-napalm is used to read the running-config because ios_config module runs into an error (see Ansible Issue 'ios_config - backup is not complete #42843')
+
+  license: license (GPLv3)
+
+  min_ansible_version: 2.3
+
+  galaxy_tags: [cisco, ios, napalm, backup]
+
+dependencies: []
+  # List your role dependencies here, one per line. Be sure to remove the '[]' above,
+  # if you add dependencies to this list.

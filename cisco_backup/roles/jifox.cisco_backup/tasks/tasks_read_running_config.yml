@@ -1,0 +1,32 @@
+---
+
+##########################################################################
+# Store switchs running-config into  var: running_config_content and
+# check for vlaid content.
+##########################################################################
+
+- name: Backup running-config from switch using NAPALM library
+  napalm_get_facts:
+    hostname: "{{ ansible_host  }}"
+    username: "{{ ansible_user }}"
+    dev_os: "{{ ansible_network_os }}"
+    password: "{{ ansible_ssh_pass }}"
+    filter:
+      - "config"
+  changed_when: false
+  register: run_conf
+
+- name: Store running-config into
+  local_action:
+    module: set_fact
+    running_config_content: "{{ run_conf.ansible_facts.napalm_config.running }}"
+  changed_when: false
+
+- name: Fail if Backup is not complete (start with 'Building configuration...'´and ends with 'end')
+  fail:
+    msg: "BACKUP running configuration failed. Remove all '>' chars in descriptions.\n {{running_config_content}}"
+  changed_when: false
+  when:
+    - running_config_content[0:25] != "Building configuration..." or
+      running_config_content[-3:] != "end"
+

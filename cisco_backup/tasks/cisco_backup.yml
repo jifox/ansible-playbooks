@@ -1,0 +1,8 @@
+---
+- hosts: all
+  connection: network_cli
+  serial: 50
+  gather_facts: no
+
+  roles:
+    - role: jifox.cisco_backup
