@@ -1,1 +1,1 @@
-see README.md in role subdirectory
+see README.md in roles subdirectory
