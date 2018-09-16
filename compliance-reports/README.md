@@ -52,6 +52,7 @@ use different jinja2 templates for report generation. The content of
 
 In there a subdirectory for each output format is expected where the templates
 to generate the report will be stored.
+
 tree output:
 ------------
     ├── compliance
