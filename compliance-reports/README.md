@@ -52,21 +52,22 @@ use different jinja2 templates for report generation. The content of
 
 In there a subdirectory for each output format is expected where the templates
 to generate the report will be stored.
-
-├── compliance
-│   ├── checks
-│   │   ├── check_ntp_sync
-│   │   │   ├── ios
-│   │   │   │   ├── html
-│   │   │   │   │   ├── data.j2
-│   │   │   │   │   ├── footer.j2
-│   │   │   │   │   └── header.j2
-│   │   │   │   └── txt
-│   │   │   │       ├── data.j2
-│   │   │   │       ├── footer.j2
-│   │   │   │       └── header.j2
-│   │   │   └── run_check.yml
-│   │   ├── check_os_version
+tree output:
+------------
+    ├── compliance
+    │   ├── checks
+    │   │   ├── check_ntp_sync
+    │   │   │   ├── ios
+    │   │   │   │   ├── html
+    │   │   │   │   │   ├── data.j2
+    │   │   │   │   │   ├── footer.j2
+    │   │   │   │   │   └── header.j2
+    │   │   │   │   └── txt
+    │   │   │   │       ├── data.j2
+    │   │   │   │       ├── footer.j2
+    │   │   │   │       └── header.j2
+    │   │   │   └── run_check.yml
+    │   │   ├── check_os_version
 
 
 ## run_check.yml
