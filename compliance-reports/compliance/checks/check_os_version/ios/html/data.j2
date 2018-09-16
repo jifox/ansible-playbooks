@@ -1,0 +1,11 @@
+{% for osv in baseline_switch_data %}
+{%   if osv.model == ansible_net_model %}
+{%     if osv.os_version == ansible_net_version %}
+{%        set statusline='<td>ok</td>' %}
+{%     else %}
+{%        set statusline='<td bgcolor="#ED5466">ERROR: OS Version (' ~ ansible_net_version ~ ') entspricht nicht der freigegeben Version</td>' %}
+{%     endif %}
+{%     set uptime=version_info[0].UPTIME | replace('weeks', 'Wo.') | replace('week', 'Wo.') | replace('days', 'T.') | replace('day', 'T.') | replace('hours', 'h') | replace('hour', 'h') | replace('minutes', 'm') | replace('minute', 'm') %}
+<tr><td>{{ inventory_hostname }}<td>{{ ansible_net_model }}</td></td>{{ statusline }}<td>{{ osv.os_version }}</td><td>{{ uptime }}</td><td>{{ version_info[0].RELOAD_REASON }}</td></tr>
+{%   endif %}
+{% endfor %}

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Compliance Report vom: 2018-09-16 12:27:41</title>
+    <style type="text/css">
+        .TFtable{
+            border-collapse:collapse; 
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .TFtable th{ 
+            padding:7px; border:#4e95f4 2px solid;
+            font-weight: bold;
+        }
+        .TFtable td{ 
+            padding:7px; border:#4e95f4 1px solid;
+        }
+        /* provide some minimal visual accomodation for IE8 and below */
+        .TFtable tr{
+            background: #b8d1f3;
+        }
+        /*  Define the background color for all the ODD background rows  */
+        .TFtable tr:nth-child(odd){ 
+            background: #b8d1f3;
+        }
+        /*  Define the background color for all the EVEN background rows  */
+        .TFtable tr:nth-child(even){
+            background: #dae5f4;
+        }
+    </style>
+</head>
+<body>
+<h1>Compliance Report</h1><p>
+Report vom: 2018-09-16 12:27:41<p>
+<hr style="height:3px">
+<ul>
+<li><a href="#check_available_ports">available_ports</a></li>
+<li><a href="#check_ntp_sync">ntp_sync</a></li>
+<li><a href="#check_os_version">os_version</a></li>
+</ul>
+<hr style="height:3px">
+<h2 id="check_available_ports">Freie Client-Switchports - Report</h2>
+
+<table class="TFtable">
+	<tr><th>Switch</th><th>Standort</th><th>Port-Anzahl</th><th>Davon-Frei</th><th>Frei %</th><th>Zeitraum</th></tr>
+	<tr><td>R1SC001</td><td>location 1-0</td><td>---</td><td>---</td><td>---</td><td>16 Wo., 4 T., 22 h, 21 m</td></tr>
+	<tr><td>R1SE001</td><td>location 1-6</td><td>48</td><td>48</td><td>100.0</td><td>5 Wo., 6 T., 5 h, 28 m</td></tr>
+	<tr><td>R1SE002</td><td>location 1-0-2</td><td>48</td><td>39</td><td>81.2</td><td>13 Wo., 3 T., 22 h, 38 m</td></tr>
+	<tr><td>R1SE003</td><td>location 1-3</td><td>96</td><td>95</td><td>98.9</td><td>5 Wo., 6 T., 5 h, 25 m</td></tr>
+	<tr><td>R1SE010</td><td>location 1-10</td><td>48</td><td>48</td><td>100.0</td><td>5 Wo., 6 T., 5 h, 22 m</td></tr>
+	<tr><td>R1SE103</td><td>location 1-5</td><td>48</td><td>26</td><td>54.1</td><td>4 Wo., 20 h, 52 m</td></tr>
+	<tr><td>R1SE106</td><td>unknown</td><td>48</td><td>29</td><td>60.4</td><td>6 Wo., 3 T., 21 h, 45 m</td></tr>
+	<tr><td>R2SC001</td><td>location 2-0</td><td>---</td><td>---</td><td>---</td><td>16 Wo., 4 T., 21 h, 21 m</td></tr>
+	<tr><td>R2SE001</td><td>location 2-0-2</td><td>48</td><td>38</td><td>79.1</td><td>5 Wo., 3 T., 2 h, 53 m</td></tr>
+	<tr><td>R2SE002</td><td>location 2-0-0</td><td>240</td><td>68</td><td>28.3</td><td>5 Wo., 1 T., 19 h, 45 m</td></tr>
+	<tr><td>R2SE101</td><td>location 3-4</td><td>96</td><td>96</td><td>100.0</td><td>5 Wo., 6 T., 4 h, 47 m</td></tr>
+	<tr><td>R2SE102</td><td>location 2-4</td><td>48</td><td>22</td><td>45.8</td><td>1 Wo., 4 T., 3 h, 31 m</td></tr>
+	<tr><td>R2SE110</td><td>location 2-7 Produktion Sued</td><td>48</td><td>11</td><td>22.9</td><td>5 Wo., 3 T., 2 h, 52 m</td></tr>
+	<tr><td>R2SE111</td><td>location 2-6 Lagereingang Prod. West</td><td>48</td><td>8</td><td>16.6</td><td>5 Wo., 3 T., 2 h, 53 m</td></tr>
+	<tr><td>R2SE112</td><td>location 2-2 Stiegenaufgang</td><td>192</td><td>100</td><td>52.0</td><td>5 Wo., 3 T., 1 h, 50 m</td></tr>
+	<tr><td>R2SE113</td><td>location 2-1 1st floor</td><td>96</td><td>9</td><td>9.3</td><td>5 Wo., 2 T., 2 h, 9 m</td></tr>
+	<tr><td>R2SE116</td><td>location 2-9</td><td>48</td><td>41</td><td>85.4</td><td>1 Wo., 4 T., 3 h, 32 m</td></tr>
+</table>
+<hr style="height:3px">
+<h2 id="check_ntp_sync">NTP SYNC - Report</h2>
+
+<table class="TFtable">
+	<tr><th>Switch</th><th>NTP Synchronisations-Status</th></tr>
+<tr><td>R1SC001</td><td>ok</td></tr>
+<tr><td>R1SE001</td><td>ok</td></tr>
+<tr><td>R1SE002</td><td>ok</td></tr>
+<tr><td>R1SE003</td><td>ok</td></tr>
+<tr><td>R1SE010</td><td>ok</td></tr>
+<tr><td>R1SE103</td><td>ok</td></tr>
+<tr><td>R1SE106</td><td>ok</td></tr>
+<tr><td>R2SC001</td><td>ok</td></tr>
+<tr><td>R2SE001</td><td>ok</td></tr>
+<tr><td>R2SE002</td><td>ok</td></tr>
+<tr><td>R2SE101</td><td>ok</td></tr>
+<tr><td>R2SE102</td><td>ok</td></tr>
+<tr><td>R2SE110</td><td>ok</td></tr>
+<tr><td>R2SE111</td><td>ok</td></tr>
+<tr><td>R2SE112</td><td>ok</td></tr>
+<tr><td>R2SE113</td><td>ok</td></tr>
+<tr><td>R2SE116</td><td>ok</td></tr>
+</table>
+<hr style="height:3px">
+<h2 id="check_os_version">Cisco IOS Version Compliance - Report</h2>
+
+<table class="TFtable">
+	<tr><th>Switch</th><th>Modell</th><th>Aktuelle-Version</th><th>Freigegebene-Version</th><th>Uptime</th><th>Reboot-Grund</th></tr>
+<tr><td>R1SC001<td>C6824-X-LE-40G</td></td><td>ok</td><td>15.4(1)SY4</td><td>16 Wo., 4 T., 22 h, 21 m</td><td>Reload Command</td></tr>
+<tr><td>R1SE001<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>5 Wo., 6 T., 5 h, 28 m</td><td>LocalSoft</td></tr>
+<tr><td>R1SE002<td>C9300-48P</td></td><td bgcolor="#ED5466">ERROR: OS Version (16.06.03) entspricht nicht der freigegeben Version</td><td>16.06.04</td><td>13 Wo., 3 T., 22 h, 38 m</td><td>PowerOn</td></tr>
+<tr><td>R1SE003<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>5 Wo., 6 T., 5 h, 25 m</td><td>LocalSoft</td></tr>
+<tr><td>R1SE010<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>5 Wo., 6 T., 5 h, 22 m</td><td>LocalSoft</td></tr>
+<tr><td>R1SE103<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>4 Wo., 20 h, 52 m</td><td>LocalSoft</td></tr>
+<tr><td>R1SE106<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>6 Wo., 3 T., 21 h, 45 m</td><td>PowerOn</td></tr>
+<tr><td>R2SC001<td>C6824-X-LE-40G</td></td><td>ok</td><td>15.4(1)SY4</td><td>16 Wo., 4 T., 21 h, 21 m</td><td>Standby Handler Reload Shelf</td></tr>
+<tr><td>R2SE001<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>5 Wo., 3 T., 2 h, 53 m</td><td>PowerOn</td></tr>
+<tr><td>R2SE002<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>5 Wo., 1 T., 19 h, 45 m</td><td>LocalSoft</td></tr>
+<tr><td>R2SE101<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>5 Wo., 6 T., 4 h, 47 m</td><td>LocalSoft</td></tr>
+<tr><td>R2SE102<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>1 Wo., 4 T., 3 h, 31 m</td><td>PowerOn</td></tr>
+<tr><td>R2SE110<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>5 Wo., 3 T., 2 h, 52 m</td><td>PowerOn</td></tr>
+<tr><td>R2SE111<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>5 Wo., 3 T., 2 h, 53 m</td><td>PowerOn</td></tr>
+<tr><td>R2SE112<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>5 Wo., 3 T., 1 h, 50 m</td><td>PowerOn</td></tr>
+<tr><td>R2SE113<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>5 Wo., 2 T., 2 h, 9 m</td><td>PowerOn</td></tr>
+<tr><td>R2SE116<td>C9300-48P</td></td><td>ok</td><td>16.06.04</td><td>1 Wo., 4 T., 3 h, 32 m</td><td>PowerOn</td></tr>
+</table>
+<hr style="height:3px">

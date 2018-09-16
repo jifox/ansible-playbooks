@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+{% set date_time = ('' ~ template_run_date).split('.')[0] %}
+<title>Compliance Report vom: {{ date_time }}</title>
+    <style type="text/css">
+        .TFtable{
+            border-collapse:collapse; 
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .TFtable th{ 
+            padding:7px; border:#4e95f4 2px solid;
+            font-weight: bold;
+        }
+        .TFtable td{ 
+            padding:7px; border:#4e95f4 1px solid;
+        }
+        /* provide some minimal visual accomodation for IE8 and below */
+        .TFtable tr{
+            background: #b8d1f3;
+        }
+        /*  Define the background color for all the ODD background rows  */
+        .TFtable tr:nth-child(odd){ 
+            background: #b8d1f3;
+        }
+        /*  Define the background color for all the EVEN background rows  */
+        .TFtable tr:nth-child(even){
+            background: #dae5f4;
+        }
+    </style>
+</head>
+<body>
+<h1>Compliance Report</h1><p>
+Report vom: {{ date_time }}<p>
+<hr style="height:3px">
+<ul>
+{% for url in checks_to_run %}
+{%  if url != 'report_header' and url != 'report_footer' %}
+{%    set anchor_name=url[6:] %}
+<li><a href="#{{ url }}">{{ anchor_name }}</a></li>
+{%  endif %}
+{% endfor %}
+</ul>
+<hr style="height:3px">
+

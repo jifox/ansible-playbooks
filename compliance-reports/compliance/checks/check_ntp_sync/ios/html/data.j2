@@ -1,0 +1,6 @@
+{% if ntp_server_is_synchronized %}
+{%   set statusline='<td>ok</td>' %}
+{% else %}
+{%   set statusline='<td bgcolor="#ED5466">ERROR: Systemzeit ist nicht mit NTP-Server synchron!</td>' %}
+{% endif %}
+<tr><td>{{ inventory_hostname }}</td>{{ statusline }}</tr>

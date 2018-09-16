@@ -1,5 +1,5 @@
 ---
-# file:  fujo.cisco_backup/tasks/cisco_ios_backup.yml
+# file:  jifox.cisco_backup/tasks/cisco_ios_backup.yml
 
 - name: Fail if not an Cisco IOS device
   fail:
@@ -29,20 +29,14 @@
 - name: Set facts for playbook
   block:
     - name:  set_fact - backup_file_dir
-      local_action:
-        module: set_fact
+      set_fact:
         backup_file_dir: "{{ backup_dir | default('~/backups') }}/{{ inventory_hostname }}"
-      changed_when: false
     - name:  set_fact - backup_file_base_name
-      local_action:
-        module: set_fact
+      set_fact:
         backup_file_base_name: "{{ backup_file_dir }}/{{ inventory_hostname }}"
-      changed_when: false
     - name:  set_fact - backup_file_name
-      local_action:
-        module: set_fact
+      set_fact:
         backup_file_name: "{{ backup_file_base_name }}_{{ lookup('pipe','date +%Y-%m-%d_%H-%M-%S') }}.bck"
-      changed_when: false
   check_mode: no
 
 - name: Display Switch
@@ -54,21 +48,21 @@
 
 # Create Backup Directory if not exists
 - name: Ensure that the backup directory exists set the group (need rw right)
-  local_action:
-    module: file
+  file:
     path: "{{ backup_file_dir }}"
     state: directory
     recurse: yes
     group: "{{ backup_files_group }}"
+  delegate_to: localhost
   run_once: yes
   when:
     - backup_files_group != ""
 - name: Ensure that the backup directory exists (need rw right)
-  local_action:
-    module: file
+  file:
     path: "{{ backup_file_dir }}"
     state: directory
     recurse: yes
+  delegate_to: localhost
   run_once: yes
   when:
     - backup_files_group == ""
@@ -81,23 +75,22 @@
 # Get the latest backup file in backup directory. (found: existing_backups.matched > 0)
 - name: "Read directory listing of: {{ backup_dir }}/[hostname]"
   local_action:
-    module: find
+  find:
     path: "{{ backup_file_dir }}"
     patterns: "*.bck"
+  delegate_to: localhost
   register: existing_backups
   check_mode: no
 
 - name: Get newest existing backup-file
-  local_action:
-    module: set_fact
+  set_fact:
     latest_backup_file: "{{ existing_backups.files | sort(attribute='mtime',reverse=true) | first }}"
   when:
     - existing_backups.matched > 0
   check_mode: no
 
 - name: Store latest backup into backup_config_content
-  local_action:
-    module: set_fact
+  set_fact:
     backup_config_content: "{{ lookup('file', latest_backup_file.path) }}"
   when:
     - existing_backups.matched > 0
@@ -116,16 +109,15 @@
 ##########################################################################
 
 - name: Calculate Checksums of backup and running config
-  local_action:
-    module: set_fact
+  set_fact:
     hash_run: "{{ running_config_content | hash('sha1') }}"
     hash_backup: "{{ backup_config_content | hash('sha1') }}"
+  delegate_to: localhost
   when:
     - existing_backups.matched > 0
 
 - name: Calculate Checksums of backup and running config
-  local_action:
-    module: set_fact
+  set_fact:
     backup_needed: "{{ existing_backups.matched == 0 or hash_run != hash_backup }}"
 
 
@@ -165,19 +157,19 @@
 ##########################################################################
 
 - name: "Copy running-config to {{ backup_file_name }}"
-  local_action:
-    module: copy
+  copy:
     content: "{{ running_config_content }}"
     dest: "{{ backup_file_name }}"
     group: "{{ backup_files_group }}"
   when:
     - backup_needed
     - backup_files_group != ""
+  delegate_to: localhost
 - name: "Copy running-config to {{ backup_file_name }}"
-  local_action:
-    module: copy
+  copy:
     content: "{{ running_config_content }}"
     dest: "{{ backup_file_name }}"
   when:
     - backup_needed
     - backup_files_group == ""
+  delegate_to: localhost

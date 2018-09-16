@@ -1,0 +1,6 @@
+{% if ntp_server_is_synchronized %}
+{%   set statusline='ok' %}
+{% else %}
+{%   set statusline='ERROR: Systemzeit ist nicht mit NTP-Server synchron!' %}
+{% endif %}
+{{ '%-15s %-30s' | format(inventory_hostname, statusline) }}

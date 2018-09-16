@@ -1,0 +1,36 @@
+---
+
+# Needed in test environment to define which python version 
+# napalm is using  
+ansible_python_interpreter: /usr/bin/python3
+
+
+ansible_connection: network_cli
+ansible_network_os: ios
+ansible_user: admin
+ansible_become: yes
+ansible_become_method: enable
+
+# ansible-vault encrypt_string --vault-id ~/.ssh/ansible-vault 'admin' --name 'ansible_ssh_pass'
+ansible_ssh_pass: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          63323366323932306162646261316332363161306434383038316363333563643466663339636162
+          6636393337623738396532353637623138303564316638650a663764383261396463346137626165
+          64636235613365333034386437393135386434336238626165353036323063383234643836366534
+          3962653331653638340a363164653339636530346134343061666334663030633466333831663135
+          35316130626662393535623437333663393263623264653662356438663764323630
+
+
+# Baseline Switch Operating Systems
+# Values from ios_facts
+#    "ansible_net_model": "C6824-X-LE-40G",
+#    "ansible_net_version": "15.4(1)SY4",
+#
+baseline_switch_data: [
+    { model: "C6824-X-LE-40G", os_version: "15.4(1)SY4" },
+    { model: "C9300-48P",      os_version: "16.06.04"   }
+  ]
+
+
+# Client Switchport names
+client_ports_regex: "GigabitEthernet\\d+\\/0\\/\\d+"

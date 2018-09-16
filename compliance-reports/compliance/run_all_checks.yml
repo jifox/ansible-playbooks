@@ -1,0 +1,141 @@
+---
+# file: run_all_checks.yml
+#
+# commandline parameter: -e rep_fmt=[txt | html]
+#  
+#
+- hosts: ios
+  gather_facts: no
+  become: no
+  serial: 100%
+
+  vars:
+    checks_to_run:
+      - report_header
+      - check_available_ports
+      - check_ntp_sync
+      - check_os_version
+      - report_footer
+    report_dir: "{{playbook_dir}}/../reports"
+
+  tasks:
+    # ########################################
+    # Prepare Report Generation
+    # ########################################
+    - name: Setup report output type
+      set_fact:
+        report_fmt: "{{ rep_fmt | default('html') }}"
+        datetime_str: "{{ lookup('pipe','date \"+%Y-%m-%d %H:%M:%S\"') }}"
+      delegate_to: localhost
+
+    - name: Ensure that the report and data directory exists
+      file:
+        path: "{{ report_dir }}/data/{{ inventory_hostname }}"
+        state: directory
+        recurse: yes
+      changed_when: no
+      delegate_to: localhost
+
+    - name: Remove temp data from Report Directory
+      file:
+        path: "{{ report_dir }}/{{ item }}"
+        state: absent
+      loop: "{{ checks_to_run }}"
+      run_once: yes
+      changed_when: no
+      delegate_to: localhost
+
+    - name: Create empty Report Directory
+      file:
+        path: "{{ report_dir }}/{{ item }}"
+        state: directory
+        recurse: yes
+      loop: "{{ checks_to_run }}"
+      run_once: yes
+      changed_when: no
+      delegate_to: localhost
+
+    # ########################################
+    # Gather common data from devices
+    # ########################################
+    - name: Gather common facts for compliance checks
+      block:
+        - ios_facts:
+
+        - name: Get version info
+          ios_command:
+            commands:
+              - show version
+          register: show_version
+
+        - name: Parse Data
+          set_fact:
+            version_info: "{{ show_version.stdout[0] | parse_cli_textfsm(playbook_dir ~ '/textfsm/cisco_ios_show_version.template') }}"
+          delegate_to: localhost
+
+        - napalm_get_facts:
+            hostname: "{{ ansible_host  }}"
+            username: "{{ ansible_user }}"
+            dev_os: "{{ ansible_network_os }}"
+            password: "{{ ansible_ssh_pass }}"
+            filter:
+              - "facts"
+              - "config"
+              - "interfaces_counters"
+              - "snmp_information"
+
+        # - name: Display all
+        #   debug:
+        #     msg: "{{ hostvars[inventory_hostname] | to_nice_yaml(indent=4) }}"
+        #   tags: [print_action]
+
+    # ########################################
+    # Run all checks
+    # ########################################
+    - name: Execute all checks
+      include_tasks: "{{ playbook_dir }}/checks/{{ current_check }}/run_check.yml"
+      vars:
+        header_template_name: "{{ playbook_dir }}/checks/{{ current_check }}/{{ ansible_network_os if (current_check !=  'report_header' and current_check != 'report_footer') else '' }}/{{ report_fmt }}/header.j2"
+        data_template_name: "{{ playbook_dir }}/checks/{{ current_check }}/{{ ansible_network_os if (current_check != 'report_header' and current_check !=  'report_footer') else '' }}/{{ report_fmt }}/data.j2"
+        footer_template_name: "{{ playbook_dir }}/checks/{{ current_check }}/{{ ansible_network_os if (current_check != 'report_header' and current_check != 'report_footer') else '' }}/{{ report_fmt }}/footer.j2"
+
+        header_output_name: "{{ report_dir }}/{{ current_check }}/2_{{ current_check }}.{{report_fmt}}"
+        data_output_name: "{{ report_dir }}/{{ current_check }}/5_{{ inventory_hostname }}_{{ current_check }}.{{report_fmt}}"
+        footer_output_name: "{{ report_dir }}/{{ current_check }}/7_{{ current_check }}.{{report_fmt}}"
+
+        historical_data_dir: "{{ report_dir }}/data"
+      ignore_errors: true
+      loop: "{{ checks_to_run | flatten(levels=1) }}"
+      loop_control:
+        loop_var: current_check
+
+    # ########################################
+    # Assemble reports
+    # ########################################
+    - name: Assemble all Reports into header_output directory
+      assemble:
+        src: "{{ report_dir }}/{{ current_check }}"
+        dest: "{{ report_dir }}/report_header/5_{{ current_check }}.{{report_fmt}}"
+      when:
+        - current_check != 'report_header'
+        - current_check != 'report_footer'
+      loop: "{{ checks_to_run }}"
+      loop_control:
+        loop_var: current_check
+      changed_when: no
+      delegate_to: localhost
+
+    - name: Assemble footer into header_output directory
+      assemble:
+        src: "{{ report_dir }}/report_footer"
+        dest: "{{ report_dir }}/report_header/7_report_footer.{{report_fmt}}"
+      changed_when: no
+      delegate_to: localhost
+
+    - name: Assemble common report into report directory
+      assemble:
+        src: "{{ report_dir }}/report_header"
+        dest: "{{ report_dir }}/compliance_reports_{{ lookup('pipe','date \"+%Y%m%d-%H%M%S\"') }}.{{report_fmt}}"
+      changed_when: no
+      run_once: yes
+      delegate_to: localhost
