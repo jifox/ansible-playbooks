@@ -27,6 +27,7 @@ There are two pseudo checks 'report_header' and 'report_footer' that generates t
 header and footer of the composite report. These should not be removed.
 
   vars:
+  -----
     checks_to_run:
       - report_header
       - check_available_ports
