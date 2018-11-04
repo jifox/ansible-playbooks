@@ -1,0 +1,48 @@
+---
+#
+# file: group_vars/all.yml
+#
+
+# Python Version used for ansible and installed modules like napalm.
+ansible_python_interpreter: /usr/bin/python3
+
+# Base directory where local ansible.cfg is located
+# (git repository master branch)
+base_dir: "{{ inventory_dir }}"
+
+# Directory where generated configuration files will be stored
+config_dir: "{{ base_dir }}/configs/{{ inventory_hostname }}"
+
+# Directory for temporary files
+host_tmpdir: "{{ base_dir }}/.compiled//{{ inventory_hostname}}"
+
+# Directory for ansible task include files inc_*.yml
+include_dir: "{{ base_dir }}/include"
+
+# Output directory for reports
+report_dir: "{{ base_dir }}/reports"
+
+# Directory where Textfsm templates are stored
+template_dir: "{{ base_dir }}/templates"
+
+# Directory where Textfsm templates are stored
+textfsm_template_dir: "{{ base_dir }}/templates/textfsm"
+
+# Directory where additional variables are stored
+vars_dir: "{{ base_dir }}/vars"
+
+# Directory to publish html files to webserver. 'is_develop' is set in inventory file
+www_dir: "/var/www/html/{{'reports-devel' if is_develop == true else 'reports'}}"
+
+
+##############################################################################
+# Varables to initialize with default values
+##############################################################################
+
+# Used to further differentiate templates. See inc_template.yml
+config_group: 'NO_CONFIG_GROUP'
+
+# Will be used to select the vars for a particular group
+location_groups:
+  - PLANT_A
+

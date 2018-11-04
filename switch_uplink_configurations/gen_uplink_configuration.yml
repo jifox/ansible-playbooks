@@ -1,0 +1,30 @@
+---
+#
+# file: gen_uplink_configuration.yml
+#
+- hosts: all
+  become: false
+  gather_facts: false
+
+  vars:
+    dest_filename_part: "0100_uplink_configuration"
+    template_dest: "{{ config_dir }}/{{ inventory_hostname }}_{{dest_filename_part}}.{{ ansible_network_os }}"
+    template_name: "config_uplinks.j2"
+
+  tasks:
+
+    - include_vars:
+        file: "{{ vars_dir }}/{{ switch_location_group }}/uplinks_db.yml"
+      check_mode: false
+      delegate_to: localhost
+
+    - name: Ensure configuration directory exists
+      file:
+        path: "{{ config_dir }}"
+        state: directory
+      delegate_to: localhost
+      check_mode: false
+
+    - include_tasks: "{{ include_dir }}/inc_template.yml"
+      delegate_to: localhost
+

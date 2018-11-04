@@ -1,0 +1,39 @@
+interface GigabitEthernet0/1
+ description 0/1 SW002 to AP001 1/0/23
+ switchport
+ switchport mode access
+ switchport nonegotiate
+ switchport access vlan 33
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ storm-control action shutdown
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+!
+interface TenGigabitEthernet1/1/1
+ description 1/1/1 SW002 to ROUTER01 1/1/2
+ switchpot mode trunk
+ switchport nonegotiate
+ switchport trunk allowed vlan 1,3-4094
+ switchport trunk native vlan 50
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+!
+interface TenGigabitEthernet1/1/2
+ description 1/1/2 SW002 to SW001 2/1/2
+ switchpot mode trunk
+ switchport nonegotiate
+ switchport trunk allowed vlan 1,3-4094
+ switchport trunk native vlan 50
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+!

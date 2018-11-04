@@ -1,0 +1,67 @@
+---
+# switch_uplinks:   used to define all uplinks between network devices.
+#
+#   channel_linktype:  (required for channel) Link aggregation mode
+#                        ["active" <--default | "desirable" | "on"]
+#   channel_nr_left:   (required for channel) Port-channel number on left device if uplink_type == channel
+#   channel_nr_right:  (required for channel) Port-channel number on right device if uplink_type == channel
+#   description:       (optional) else default description will be generated
+#   interface_left:    interfaces on left device (must be same count than interfaces_right) [Te | Gi | et | Po]
+#   interface_right:   interfaces on right device (must be same count than interfaces_left) [Te | Gi | et | Po]
+#   key:               IMPORTANT: NAMING CONVENTION
+#                        1.) inventory_hostname of left device - alphabetically smaller than right device
+#                                                                this assures that no duplicates are defined
+#                        2.) underline character '_'
+#                        3.) inventory_hostname of right device
+#                        4.) (optional) underline character '_'
+#                        5.) (optional) unique identifier to allow multiple connections between devices
+#   native_vlan:       (optional - default: switchport_default_vlan_id) vlan for access port or
+#                      untagged vlan for channels and trunks.
+#                      allowed VLANs are all vlans that are defined for this device
+#   root_guard:        (optional) Enable spanning-tree guard root [ true | false <-- default ]
+#   uplink_type:       access | trunk | channel <-- default
+#
+switch_uplinks:
+  "AP001_SW002":
+    uplink_type: access
+    native_vlan: "33"
+    interfaces_left:  [Gi1/0/23]
+    interfaces_right: [Gi0/1]
+
+  "ROUTER01_SW001":
+    uplink_type: channel
+    channel_linktype: "desirable"
+    channel_nr_left: "1"
+    channel_nr_right: "1"
+    interfaces_left:  [Te1/1/1, Te2/1/1]
+    interfaces_right: [Te1/1/1, Te2/1/1]
+  "ROUTER01_SW002_02":
+    uplink_type: trunk
+    channel_nr_left: "2"
+    channel_nr_right: "1"
+    interfaces_left:  [Te1/1/2]
+    interfaces_right: [Te1/1/1]
+  "ROUTER01_FIREWALL01":
+    uplink_type: channel
+    channel_linktype: "on"
+    channel_nr_left: "24"
+    channel_nr_right: "1"
+    native_vlan: "10"
+    root_guard: true
+    interfaces_left:  [Gi1/0/24, Gi2/0/24]
+    interfaces_right: [et2-1, et2-2]
+
+  "SW001_VMWARE001":
+    uplink_type: channel
+    channel_linktype: "on"
+    channel_nr_left: "3"
+    channel_nr_right: "3"
+    native_vlan: "20"
+    root_guard: true
+    interfaces_left:  [Te1/1/3, Te2/1/3]
+    interfaces_right: [te1, Te2]
+
+  "SW001_SW002":
+    uplink_type: trunk
+    interfaces_left:  [Te2/1/2]
+    interfaces_right: [te1/1/2]

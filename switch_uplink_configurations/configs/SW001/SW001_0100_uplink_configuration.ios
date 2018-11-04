@@ -1,0 +1,96 @@
+interface Port-channel1
+ description PoPo1 - SW001 to ROUTER01 - Po1 (desirable)
+ switchport
+ switchport mode trunk
+ switchport nonegotiate
+ logging event spanning-tree status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control action trap
+ switchport trunk allowed vlan 1,3-4094
+ switchport trunk native vlan 50
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+!
+interface TenGigabitEthernet1/1/1
+ description 1/1/1 Po1 - SW001 to ROUTER01 - Po1 1/1/1
+ switchpot mode trunk
+ switchport nonegotiate
+ logging event bundle-status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+ channel-group 1 mode desirable
+!
+interface TenGigabitEthernet2/1/1
+ description 2/1/1 Po1 - SW001 to ROUTER01 - Po1 2/1/1
+ switchpot mode trunk
+ switchport nonegotiate
+ logging event bundle-status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+ channel-group 1 mode desirable
+!
+interface Port-channel3
+ description PoPo3 - SW001 to VMWARE001 - Po3 (on)
+ switchport
+ switchport mode trunk
+ switchport nonegotiate
+ logging event spanning-tree status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control action trap
+ switchport trunk allowed vlan 1,3-4094
+ switchport trunk native vlan 20
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+ spanning-tree guard root
+!
+interface TenGigabitEthernet1/1/3
+ description 1/1/3 Po3 - SW001 to VMWARE001 - Po3 1
+ switchpot mode trunk
+ switchport nonegotiate
+ logging event bundle-status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+ spanning-tree guard root
+ channel-group 3 mode on
+!
+interface TenGigabitEthernet2/1/3
+ description 2/1/3 Po3 - SW001 to VMWARE001 - Po3 2
+ switchpot mode trunk
+ switchport nonegotiate
+ logging event bundle-status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+ spanning-tree guard root
+ channel-group 3 mode on
+!
+interface TenGigabitEthernet2/1/2
+ description 2/1/2 SW001 to SW002 1/1/2
+ switchpot mode trunk
+ switchport nonegotiate
+ switchport trunk allowed vlan 1,3-4094
+ switchport trunk native vlan 50
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+!

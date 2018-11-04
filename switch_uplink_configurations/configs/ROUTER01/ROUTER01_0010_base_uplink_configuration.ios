@@ -1,0 +1,120 @@
+!device-tracking policy TRUNK
+! trusted-port
+! device-role switch
+! no protocol udp
+!
+! -------------------------------------------------------------------------------
+! UPLINK for Po1 - ROUTER01 to SW001 - Po1 (channel)
+! -------------------------------------------------------------------------------
+interface Port-channel1
+ description PoPo1 - ROUTER01 to SW001 - Po1 (desirable)
+ shutdown
+ switchport
+ switchport mode trunk
+ switchport nonegotiate
+ logging event spanning-tree status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control action trap
+!
+interface TenGigabitEthernet1/1/1
+ description 1/1/1 Po1 - ROUTER01 to SW001 - Po1 1/1/1
+ switchport
+ switchpot mode trunk
+ switchport nonegotiate
+ logging event bundle-status
+ load-interval 30
+ ! storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ channel-group 1 mode desirable
+interface TenGigabitEthernet2/1/1
+ description 2/1/1 Po1 - ROUTER01 to SW001 - Po1 2/1/1
+ switchport
+ switchpot mode trunk
+ switchport nonegotiate
+ logging event bundle-status
+ load-interval 30
+ ! storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ channel-group 1 mode desirable
+interface Port-channel1
+ description PoPo1 - ROUTER01 to SW001 - Po1 (desirable)
+ shutdown
+ switchport trunk allowed vlan 1,3-4094
+ switchport trunk native vlan 50
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+ no shutdown
+!
+! -------------------------------------------------------------------------------
+! UPLINK for ROUTER01 to SW002 (trunk)
+! -------------------------------------------------------------------------------
+interface TenGigabitEthernet1/1/2
+ description 1/1/2 ROUTER01 to SW002 1/1/1
+ shutdown
+ switchport
+ switchpot mode trunk
+ switchport nonegotiate
+ switchport trunk allowed vlan 1,3-4094
+ switchport trunk native vlan 50
+ load-interval 30
+ ! storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+ no shutdown
+!
+! -------------------------------------------------------------------------------
+! UPLINK for Po24 - ROUTER01 to FIREWALL01 - Po1 (channel)
+! -------------------------------------------------------------------------------
+interface Port-channel24
+ description PoPo24 - ROUTER01 to FIREWALL01 - Po1 (on)
+ shutdown
+ switchport
+ switchport mode trunk
+ switchport nonegotiate
+ logging event spanning-tree status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control action trap
+!
+interface GigabitEthernet1/0/24
+ description 1/0/24 Po24 - ROUTER01 to FIREWALL01 - Po1 2-1
+ switchport
+ switchpot mode trunk
+ switchport nonegotiate
+ logging event bundle-status
+ load-interval 30
+ ! storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ channel-group 24 mode on
+interface GigabitEthernet2/0/24
+ description 2/0/24 Po24 - ROUTER01 to FIREWALL01 - Po1 2-2
+ switchport
+ switchpot mode trunk
+ switchport nonegotiate
+ logging event bundle-status
+ load-interval 30
+ ! storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ channel-group 24 mode on
+interface Port-channel24
+ description PoPo24 - ROUTER01 to FIREWALL01 - Po1 (on)
+ shutdown
+ switchport trunk allowed vlan 1,3-4094
+ switchport trunk native vlan 10
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+ spanning-tree guard root
+ no shutdown
+!

@@ -1,0 +1,110 @@
+{% for ul in switch_uplinks %}
+{%   set dev = ul.split('_') %}
+{%   set dic = switch_uplinks[ul] %}
+{%   set utype = dic.uplink_type | default('channel') %}
+{%   set linktype = dic.channel_linktype | default('active') %}
+{%   set is_my_device = false %}
+{%   set nvlan = dic.native_vlan | default(switchport_default_vlan_id) %}
+{%   set rguard = dic.root_guard | default(false) %}
+{%   if inventory_hostname == dev[0] %}
+{#     left device found #}
+{%     set dev_local = dev[0] %}
+{%     set dev_remote = dev[1] %}
+{%     set is_my_device = true %}
+{%     set intf = dic.interfaces_left %}
+{%     set intf_remote = dic.interfaces_right %}
+{%     if utype == 'channel' %}
+{%       set channel_local = dic.channel_nr_left %}
+{%       set channel_remote = dic.channel_nr_right %}
+{%     endif %}
+{%   elif inventory_hostname == dev[1] %}
+{#     right device found #}
+{%     set dev_local = dev[1] %}
+{%     set dev_remote = dev[0] %}
+{%     set is_my_device = true %}
+{%     set intf = dic.interfaces_right %}
+{%     set intf_remote = dic.interfaces_left %}
+{%     if utype == 'channel' %}
+{%       set channel_local = dic.channel_nr_right %}
+{%       set channel_remote = dic.channel_nr_left %}
+{%     endif %}
+{%   endif %}
+{%   if is_my_device %}
+{%     if utype == 'channel' %}
+{%       set desc = dic.description | default('Po' ~ channel_local ~ ' - ' ~ dev_local ~ ' to ' ~ dev_remote) ~ ' - Po' ~ channel_remote %}
+{%     else %}
+{%       set desc = dic.description | default(dev_local ~ " to " ~ dev_remote)  %}
+{%     endif %}
+{%     if utype == 'channel' %}
+interface Port-channel{{ channel_local }}
+ description Po{{ desc }} ({{ linktype }})
+ switchport
+ switchport mode trunk
+ switchport nonegotiate
+ logging event spanning-tree status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control action trap
+ switchport trunk allowed vlan 1,3-4094
+ switchport trunk native vlan {{ nvlan }}
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+{%         if rguard %}
+ spanning-tree guard root
+{%         endif %}
+!
+{%     endif %}
+{%     for i in range(intf | length) %}
+{%       set iflo = intf[i] | client_intf_str %}
+{%       set ifre = intf_remote[i] | client_intf_str %}
+interface {{ iflo.name }}{{ iflo.number }}
+ description {{ iflo.number }} {{ desc }} {{ ifre.number }}
+{%       if utype == 'channel' %}
+ switchpot mode trunk
+ switchport nonegotiate
+ logging event bundle-status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+{%         if rguard %}
+ spanning-tree guard root
+{%         endif %}
+ channel-group {{ channel_local }} mode {{ linktype }}
+!
+{%       elif utype == 'trunk' %}
+ switchpot mode trunk
+ switchport nonegotiate
+ switchport trunk allowed vlan 1,3-4094
+ switchport trunk native vlan {{ nvlan }}
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+{%         if rguard %}
+ spanning-tree guard root
+{%         endif %}
+!
+{%       elif utype == 'access' %}
+ switchport
+ switchport mode access
+ switchport nonegotiate
+ switchport access vlan {{ nvlan }}
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ storm-control action shutdown
+ ip dhcp snooping trust
+ device-tracking attach-policy TRUNK
+{%         if rguard %}
+ spanning-tree guard root
+{%         endif %}
+!
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+{% endfor %}

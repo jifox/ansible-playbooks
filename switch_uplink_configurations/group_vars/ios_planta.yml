@@ -1,0 +1,7 @@
+---
+switch_location_group: PLANT_A
+switch_location:
+  - pl_a
+
+# native VLAN if not otherwise set
+switchport_default_vlan_id: "50"

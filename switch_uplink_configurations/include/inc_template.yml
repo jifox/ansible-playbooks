@@ -1,0 +1,35 @@
+---
+#
+# file: inc_template.yml
+#
+# is used to automatically select the most specific template with given name
+#
+# Parameters:
+#    template_name:  filename with extension  e.g.:  'config_vlans.j2'
+#    template_dest:  [path]filename of output_file
+#
+#    template_dir:   base directory where templates are searched
+
+- assert:
+    msg: "template_name or template_dest is not defined"
+    that:
+      - template_name is defined
+      - template_dest is defined
+  delegate_to: localhost
+
+- name: Find specific template file
+  block:
+  - set_fact:
+      search_path:
+        - "{{ template_dir }}/{{ ansible_network_os | default('unknown_os') }}/{{ config_group }}/{{ template_name }}"
+        - "{{ template_dir }}/{{ ansible_network_os | default('unknown_os') }}/{{ template_name }}"
+        - "{{ template_dir }}/{{ template_name }}"
+  - set_fact:
+      template_src: "{{ lookup('first_found', search_path) }}"
+  delegate_to: localhost
+
+- template:
+    src: "{{ lookup('first_found', search_path) }}"
+    dest: "{{ template_dest }}"
+    lstrip_blocks: true
+  delegate_to: localhost
