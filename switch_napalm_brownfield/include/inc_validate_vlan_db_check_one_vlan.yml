@@ -1,0 +1,25 @@
+---
+#
+# file: inc_validate_vlan_db_check_one_vlan.yml
+#
+# Parameter:
+#  check_vlan_id
+
+- assert:
+    msg: "Vlan-ID {{ check_vlan_id }}: 'vlan_deploy' contains an invalid item '{{ item }}' that is not defined in vlan_db.vlan_groups"
+    that:
+      - item in vlan_db.vlan_groups
+  with_items: "{{ vlan_db.vlan_defines[check_vlan_id].vlan_deploy }}"
+  check_mode: false
+  delegate_to: localhost
+
+- assert:
+    msg: |
+         Illegal value in vlan_db.yml at Vlan-ID {{ check_vlan_id }}
+         vlan_name: {{ 'EMPTY string is not allowed!' if vlan_db.vlan_defines[check_vlan_id].vlan_name is defined else 'Missing key' }}
+    that:
+      - vlan_db.vlan_defines[check_vlan_id].vlan_name is defined
+      - vlan_db.vlan_defines[check_vlan_id].vlan_name > ""
+  check_mode: false
+  delegate_to: localhost
+

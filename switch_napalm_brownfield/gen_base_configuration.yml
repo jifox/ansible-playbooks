@@ -1,0 +1,56 @@
+---
+#
+# file: gen_base_configuration.yml
+#
+#
+#
+- hosts: switches
+  become: false
+  gather_facts: false
+
+  vars:
+    template_name: "base_config.j2"
+    dest_filename_part: "0010_base_configuration"
+    template_dest: "{{ host_tmpdir }}/{{ inventory_hostname }}_{{dest_filename_part}}.{{ ansible_network_os }}"
+    config_dest:  "{{ config_dir }}/{{inventory_hostname}}_base_configuration.{{ ansible_network_os }}"
+
+  tasks:
+    - include_vars:
+        dir: "{{ vars_dir }}/{{ switch_location_group }}"
+      check_mode: false
+      delegate_to: localhost
+
+    - name: Ensure directories exists
+      include_tasks: "{{ include_dir }}/inc_validate_directories.yml"
+      check_mode: false
+      delegate_to: localhost
+
+    - include_tasks: "{{ include_dir }}/inc_template.yml"
+      vars:
+        template_name: "base_config.j2"
+        dest_filename_part: "0010_base_configuration"
+        template_dest: "{{ host_tmpdir }}/{{ inventory_hostname }}_{{dest_filename_part}}.{{ ansible_network_os }}"
+        config_dest:  "{{ config_dir }}/{{inventory_hostname}}_base_configuration.{{ ansible_network_os }}"
+      delegate_to: localhost
+
+    - name: Copy generated file to config Directory
+      copy:
+        src: "{{ template_dest }}"
+        dest: "{{ config_dest }}"
+      changed_when: false
+      delegate_to: localhost
+      when:
+        - do_commit is defined
+
+    - name: Display Commit Message
+      block:
+        - stat:
+            path: "{{config_dest}}"
+          register: config_file_stat_result
+
+        - debug:
+            msg: "{{'Attention: destination file exists ('~ config_dest ~ ')!\n\n' if config_file_stat_result.stat.exists else '' }}To copy the generated configuration definition to the {{config_dest}} directory, use commandline parameter -e do_commit=1\nGenerated: {{template_dest}}"
+          tags: [print_action]
+      when:
+        - do_commit is not defined
+      delegate_to: localhost

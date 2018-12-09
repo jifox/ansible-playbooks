@@ -1,0 +1,38 @@
+{# set DEFAULT Gi1/0/1-48 if not defined #}
+{% if base_config_client_interface_ranges is defined and base_config_client_interface_ranges|length > 0 %}
+{%   set client_ranges=base_config_client_interface_ranges %}
+{% else %}
+{%   set client_ranges=["Gi1/0/1-48"] %}
+{% endif %}
+{# CLIENT SWITCHPORT - STANDARD DEFINITION #}
+{% for intf in client_ranges %}
+{%   if intf[:2] == "Te" %}
+{%     set interface="TenGigabitEthernet" %}
+{%   elif intf[:2] == "Gi" %}
+{%     set interface="GigabitEthernet" %}
+{%   elif intf[:2] == "Fo" %}
+{%     set interface="GigabitEthernet" %}
+{%   endif %}
+{%   set interface_range=intf[2:] %}
+interface range {{ interface }}{{ interface_range }}
+ switchport mode access
+ switchport access vlan {{ switchport_default_vlan_id }}
+{%   if switchport_voice_vlan_id != "" %}
+ switchport voice vlan {{ switchport_voice_vlan_id }}
+{%   endif %}
+{%   if config_group != 'C2960' %}
+ ip flow monitor IPv4_STEALTHWATCH_NETFLOW input
+{%   endif %}
+{% if config_group in ['C3560'] %}
+ ip flow monitor IPv4_STEALTHWATCH_NETFLOW sampler STEALTHWATCH_NETFLOW_SAMPLER input
+{%   endif %}
+ switchport nonegotiate
+ storm-control multicast level 5.00
+ storm-control broadcast level 5.00
+ storm-control action trap
+ storm-control action shutdown
+ spanning-tree portfast
+ spanning-tree guard root
+ ip arp inspection limit rate 400 burst interval 3
+!
+{% endfor %}

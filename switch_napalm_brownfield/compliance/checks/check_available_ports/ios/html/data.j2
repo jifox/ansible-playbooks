@@ -1,0 +1,23 @@
+{% set nsf = namespace(free_ports = 0) %}
+{% set nsa = namespace(all_ports = 0) %}
+{% for intf in napalm_interfaces_counters %}
+{%   if intf | regex_search( client_ports_regex ) %}
+{%     set nsa.all_ports = nsa.all_ports + 1 %}
+{%     if napalm_interfaces_counters[intf].rx_octets == 0 and napalm_interfaces_counters[intf].rx_octets == 0 %}
+{%       set nsf.free_ports = nsf.free_ports +1 %}
+{%     endif %}
+{%   endif %}
+{% endfor %}
+{% set uptime=textfsm_version_info[0].UPTIME | replace('weeks', 'Wo.') | replace('week', 'Wo.') | replace('days', 'T.') | replace('day', 'T.') | replace('hours', 'h') | replace('hour', 'h') | replace('minutes', 'm') | replace('minute', 'm') %}
+{% if nsa.all_ports == 0 %}
+	<tr><td><a href="{{inventory_hostname}}_client_port_details.html" target="_blank" rel="noopener noreferrer">{{ inventory_hostname | e}}</a></td><td>{{ napalm_snmp_information.location | e }}</td><td>---</td><td>---</td><td>---</td><td>{{ uptime }}</td></tr>
+{% else %}
+{%   set percent=(nsf.free_ports * 100.0) / nsa.all_ports %}
+{%   set percent_str = percent | round(1, 'floor') %}
+{%   if percent >= 5.0 %}
+{%     set port_status='<td>' ~ percent_str ~ '</td>' %}
+{%   else %}
+{%     set port_status='<td bgcolor="#ED5466">' ~ percent_str ~ '</td>' %}
+{%   endif %}
+	<tr><td><a href="{{inventory_hostname}}_client_port_details.html" target="_blank" rel="noopener noreferrer">{{ inventory_hostname | e}}</a></td><td>{{ napalm_snmp_information.location | e}}</td><td>{{ nsa.all_ports }}</td><td>{{ nsf.free_ports if nsa.all_ports > 0 else '--' }}</td>{{ port_status }}<td>{{ uptime }}</td></tr>
+{% endif %}

@@ -1,0 +1,10 @@
+{% if ansible_net_model[0:5] == 'C6824' or 'atbrdz' in switch_location %}
+<tr><td>{{ inventory_hostname | e}}</td><td>---</td></tr>
+{% else %}
+{%   if dot1x_sysauthcontrol == 'Enabled' %}
+{%      set statusline='<td>Ja</td>' %}
+{%   else %}
+{%      set statusline='<td bgcolor="#ED5466">Nein</td>' %}
+{%   endif %}
+<tr><td>{{ inventory_hostname | e}}</td>{{ statusline }}</tr>
+{% endif %}

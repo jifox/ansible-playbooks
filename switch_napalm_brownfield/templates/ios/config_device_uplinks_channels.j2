@@ -1,0 +1,60 @@
+{#{% set ifre = intf_remote[i] | client_intf_str %}#}
+{% for ul in device_uplinks.channel_uplinks %}
+{%   set ch = device_uplinks.channel_uplinks[ul] %}
+{# PORT CHANNELS INTERFACE #}
+interface Port-channel{{ ch.channel_nr_local }}
+ description {{ ch.description }}
+{%   if config_group in ['C6800', 'C2960', 'C3560'] %}
+ switchport
+{%   else %}
+ device-tracking attach-policy DT_TRUNK
+{%   endif%}
+ switchport mode trunk
+ switchport nonegotiate
+ logging event spanning-tree status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ switchport trunk allowed vlan {{ ch.allowed_vlans }}
+{%   if ch.native_vlan != '1' %}
+ switchport trunk native vlan {{ ch.native_vlan }}
+{%   endif %}
+ ip dhcp snooping trust
+ ip arp inspection trust
+{%   if ch.root_guard %}
+ spanning-tree guard root
+{%   endif %}
+!
+{#   PORT CHANNEL MEMBER INTERFACES #}
+{%   for i in range(ch.interface_local | length) %}
+{%     set intf_loc = ch.interface_local[i] | client_intf_str %}
+{%     set intf_rem = ch.interface_remote[i] | client_intf_str  %}
+interface {{ intf_loc.name }}{{ intf_loc.number }}
+ description {{ intf_loc.number }} {{ ch.description }} {{ intf_rem.number }}
+ description {{ ch.description }}
+{%   if config_group in ['C6800', 'C2960', 'C3560'] %}
+ switchport
+{%   else %}
+ device-tracking attach-policy DT_TRUNK
+{%   endif%}
+ switchport mode trunk
+ switchport nonegotiate
+ logging event spanning-tree status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control multicast level 5.00
+ storm-control action trap
+ switchport trunk allowed vlan {{ ch.allowed_vlans }}
+{%   if ch.native_vlan != '1' %}
+ switchport trunk native vlan {{ ch.native_vlan }}
+{%   endif %}
+ ip dhcp snooping trust
+ ip arp inspection trust
+{%   if ch.root_guard %}
+ spanning-tree guard root
+{%   endif %}
+ channel-group {{ ch.channel_nr_local }} mode {{ ch.channel_linktype }}
+!
+{%   endfor %}
+{% endfor %}

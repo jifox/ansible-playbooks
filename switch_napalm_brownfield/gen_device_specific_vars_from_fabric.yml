@@ -1,0 +1,114 @@
+---
+#
+# file: gen_device_specific_vars_from_fabric.yml
+#
+
+- hosts: switches
+  become: false
+  gather_facts: false
+
+  vars:
+    device_vlan_dest: "{{ base_dir }}/host_vars/{{ inventory_hostname }}/device_vlans.yml"
+    device_uplinks_dest: "{{ base_dir }}/host_vars/{{ inventory_hostname }}/device_uplinks.yml"
+
+  tasks:
+
+    #######################################################################
+    # Initialize environment
+    #######################################################################
+
+    - name: "Read all configuration definitions"
+      include_vars:
+        dir: "{{ vars_dir }}/{{ switch_location_group }}"
+      check_mode: false
+      delegate_to: localhost
+
+    - name: Ensure directories exists
+      include_tasks: "{{ include_dir }}/inc_validate_directories.yml"
+      check_mode: false
+      delegate_to: localhost
+
+    - name: Ensure host_vars directory exists
+      file:
+        path: "{{ base_dir }}/host_vars/{{ inventory_hostname }}"
+        state: directory
+      check_mode: false
+      delegate_to: localhost
+
+    - name: Validate vlan_db
+      include_tasks: "{{ include_dir }}/inc_validate_vlan_db.yml"
+      check_mode: false
+      delegate_to: localhost
+
+    #######################################################################
+    # Generate device_vlans.yml
+    #######################################################################
+
+
+    - name: Generate device_vlans.yml in host_vars directory
+      include_tasks: "{{ include_dir }}/inc_template.yml"
+      vars:
+        template_name: "gen_device_specific_vlan_data.j2"
+        template_dest: "{{ host_tmpdir }}/{{inventory_hostname}}_device_vlans.yml"
+      delegate_to: localhost
+
+    - name: Copy generated file to device_vars_dest Directory
+      copy:
+        src: "{{ template_dest }}"
+        dest: "{{ device_vlan_dest }}"
+      vars:
+        template_dest: "{{ host_tmpdir }}/{{inventory_hostname}}_device_vlans.yml"
+      changed_when: false
+      delegate_to: localhost
+      when:
+        - do_commit is defined
+
+    - name: Display Commit Message
+      block:
+        - stat:
+            path: "{{ device_vlan_dest }}"
+          register: stat_result
+        - debug:
+            msg: "{{'Attention: destination file exists ('~ device_vlan_dest ~ ')!\n\n' if stat_result.stat.exists else '' }}To copy the generated configuration definition to the host_vars directory, use commandline parameter -e do_commit=1\nGenerated: {{template_dest}}"
+          vars:
+             template_dest: "{{ host_tmpdir }}/{{inventory_hostname}}_device_vlans.yml"
+          tags: [print_action]
+      when:
+        - do_commit is not defined
+      delegate_to: localhost
+
+    #######################################################################
+    # Generate device_uplinks.yml
+    #######################################################################
+
+    - name: Generate device_uplinks.yml in host_vars directory
+      include_tasks: "{{ include_dir }}/inc_template.yml"
+      vars:
+        template_name: "gen_device_specific_uplinks_data.j2"
+        template_dest: "{{ host_tmpdir }}/{{inventory_hostname}}_device_uplinks.yml"
+      delegate_to: localhost
+
+    - name: Copy generated file to device_vars_dest Directory
+      copy:
+        src: "{{ template_dest }}"
+        dest: "{{ device_uplinks_dest }}"
+      vars:
+        template_dest: "{{ host_tmpdir }}/{{inventory_hostname}}_device_uplinks.yml"
+      changed_when: false
+      delegate_to: localhost
+      when:
+        - do_commit is defined
+
+    - name: Display Commit Message Uplinks
+      block:
+        - stat:
+            path: "{{ device_uplinks_dest }}"
+          register: stat_result
+        - debug:
+            msg: "{{'Attention: destination file exists ('~ device_uplinks_dest ~ ')!\n\n' if stat_result.stat.exists else '' }}To copy the generated configuration definition to the host_vars directory, use commandline parameter -e do_commit=1\nGenerated: {{template_dest}}"
+          vars:
+            template_dest: "{{ host_tmpdir }}/{{inventory_hostname}}_device_uplinks.yml"
+          tags: [print_action]
+      when:
+        - do_commit is not defined
+      delegate_to: localhost

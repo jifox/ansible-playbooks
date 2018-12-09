@@ -1,0 +1,10 @@
+{% set date_time = ('' ~ template_run_date).split('.')[0] %}
+<h2 id="{{ current_check }}">Freie Client-Switchports - Report</h2>
+
+<table style="font-family:arial,helvetica,sans-serif; font-size:4;">
+  <tr><td>Report vom: {{ date_time }}</td></tr>
+  <tr><td>Durch Klicken auf den Switch-Namen wird die Detailliste der freien Ports angezeigt.</td></tr>
+</table>
+&nbsp;<p>
+<table class="TFtable">
+	<tr><th>Switch</th><th>Standort</th><th>Port-Anzahl</th><th>Davon-Frei</th><th>Frei %</th><th>Zeitraum</th></tr>

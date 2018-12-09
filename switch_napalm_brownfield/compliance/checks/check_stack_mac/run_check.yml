@@ -1,0 +1,29 @@
+---
+
+# HEADER
+- name: Generate Header
+  template:
+    src: "{{ header_template_name }}"
+    dest: "{{ header_output_name }}"
+  run_once: yes
+  delegate_to: localhost
+
+- name: Define Result
+  set_fact:
+    stack_mac_persistent_is_configured: "{{ True if napalm_config.running.find('stack-mac persistent timer 0') != -1 else False }}"
+    stack_mac_is_stack: "{{ False if ansible_net_model == 'C6824-X-LE-40G' or ansible_net_model == 'WS-C2960CX-8TC-L' else True }}"
+  delegate_to: localhost
+
+- name: Generate output for current host
+  template:
+    src: "{{ data_template_name }}"
+    dest: "{{ data_output_name }}"
+  delegate_to: localhost
+
+# FOOTER
+- name: Generate footer Output
+  template:
+    src: "{{ footer_template_name }}"
+    dest: "{{ footer_output_name }}"
+  run_once: yes
+  delegate_to: localhost

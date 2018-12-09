@@ -1,0 +1,57 @@
+{% set date_time = ('' ~ template_run_date).split('.')[0] %}
+! Generated at:     {{ date_time }}
+! Ansible-Playbook: tasks/gen_core_uplink_config.yml
+{%   if port_channel_mode == "on" %}
+{%     set mode_str="TRUNK" %}
+{%   elif port_channel_mode == "desirable" %}
+{%     set mode_str="PAgP" %}
+{%   elif port_channel_mode == "active" %}
+{%     set mode_str="LACP" %}
+{%   endif %}
+! -------------------------------------------------------------------------------
+! UPLINK for {{ inventory_hostname }} ({{ ansible_host }}) to {{ port_channel_neighbor }}
+! -------------------------------------------------------------------------------
+interface Port-channel{{ port_channel_number }}
+ description Po{{ port_channel_number }} - to {{ port_channel_neighbor }} - Po{{ port_channel_number_remote }} ({{ mode_str }})
+ shutdown
+ switchport
+ switchport mode trunk
+ switchport nonegotiate
+ logging event spanning-tree status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control action trap
+!
+{%   for intf in port_channel_interfaces %}
+{%     if intf[:2] == "Te" %}
+{%       set interface="TenGigabitEthernet" %}
+{%     elif intf[:2] == "Gi" %}
+{%       set interface="GigabitEthernet" %}
+{%     elif intf[:2] == "Fo" %}
+{%       set interface="GigabitEthernet" %}
+{%     endif %}
+{%     set interface_nr=intf[2:] %}
+interface {{ interface }}{{ interface_nr }}
+ description {{ interface_nr }} Po{{ port_channel_number }} - {{ port_channel_neighbor }}
+ switchport
+ switchport mode trunk
+ switchport nonegotiate
+ logging event bundle-status
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control action trap
+ channel-group {{ port_channel_number }} mode {{ port_channel_mode }}
+!
+{%   endfor %}
+interface Port-channel{{ port_channel_number }}
+ description Po{{ port_channel_number }} to {{ port_channel_neighbor }} ({{ mode_str }})
+ shutdown
+ switchport trunk native vlan 32
+ switchport trunk native vlan 1
+ switchport trunk allowed vlan 1,3228
+ switchport trunk allowed vlan 1,3-4094
+ ip dhcp snooping trust
+ ip arp inspection trust
+ no shutdown
+ exit
+!

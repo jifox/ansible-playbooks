@@ -1,0 +1,27 @@
+---
+#
+# file: inc_gen_unmanaged_configuration.yml
+#
+
+- name: Check inc_gen_unmanaged_configuration Parameters
+  assert:
+    msg: "Missing Parameter in inc_gen_unmanaged_configuration.yml: del_section_regex or template_dest is not defined!"
+    that:
+      - del_section_regex is defined
+      - del_section_regex > ""
+      - template_dest is defined
+      - template_dest > ""
+  delegate_to: localhost
+
+# The template uses the var src_config to render the output.
+- template:
+    src: "{{ template_dir }}/config_section_remover.j2"
+    dest: "{{ template_dest }}"
+    lstrip_blocks: true
+  delegate_to: localhost
+
+- name: Read the rendered output back to src_config. (chain)
+  set_fact:
+    src_config: "{{ lookup('file', template_dest ) }}"
+  changed_when: false
+  delegate_to: localhost

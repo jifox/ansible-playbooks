@@ -1,0 +1,24 @@
+no ip dhcp snooping information option
+ip dhcp snooping database flash:/snoopdb.txt
+{% set ns = namespace(is_first = true) %}
+{% for vl in vlan_db.vlan_defines %}
+{%   set vldata=vlan_db.vlan_defines[vl] %}
+{%   set ns.is_vlan_defined = false %}
+{%   for loc in switch_location %}
+{%     if loc in vldata.vlan_deploy %}
+{%       set ns.is_vlan_defined = true %}
+{%     endif %}
+{%   endfor %}
+{%   if ns.is_vlan_defined -%}
+{%     if ns.is_first %}
+{%        set ns.is_first = false %}
+{%        set emit='ip dhcp snooping vlan ' ~vl %}
+{%     else %}
+{%        set emit=',' ~ vl %}
+{%     endif %}
+{{ emit }}
+{%-  endif %}
+{% endfor %}
+
+! ip dhcp snooping		<-- this command enables DHCP-Snooping! activate after all uplinks are configured as trusted interfaces.
+!

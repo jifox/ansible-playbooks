@@ -1,0 +1,8 @@
+{% set date_time = ('' ~ template_run_date).split('.')[0] %}
+<h2 id="{{ current_check }}">Client-Switchport-Configuration Compliance - Report</h2>
+
+<table style="font-family:arial,helvetica,sans-serif; font-size:4;">
+  <tr><td>Report vom: {{ date_time }}</td></tr>
+</table>
+<table class="TFtable">
+	<tr><th>Switch</th><th>Compliant</tr>

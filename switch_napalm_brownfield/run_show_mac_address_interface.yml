@@ -1,0 +1,75 @@
+---
+# file: run_show_mac_address.yml
+#
+- hosts: ios:!ATBRACSC*:!ATKPACSC*
+  gather_facts: no
+  become: no
+  serial: 100%
+
+  tasks:
+    - assert:
+        msg: "Missing commandline parameter: -e mac='00:00:00:00:00:00'"
+        that:
+          - mac is defined
+
+    - name: Ensure Empty temporary report directoriy exist
+      block:
+        - file:
+            path: "{{ report_dir }}/tmp"
+            state: absent
+          changed_when: false
+        - file:
+            path: "{{ report_dir }}/tmp"
+            state: directory
+          changed_when: false
+      delegate_to: localhost
+
+    - name: Read configuration from switch
+      block:
+        - napalm_get_facts:
+            provider: "{{ provider_napalm }}"
+            timeout: 120
+            filter:
+              - "mac_address_table"
+
+    - name: Generate Mac-Interface List header
+      copy:
+        content: |
+          ---
+          mac_address_found:
+        dest: "{{ report_dir }}/tmp/00_found_mac_intf_header.txt"
+      check_mode: false
+      run_once: true
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Generate Mac-Interface List
+      include_tasks: "{{ include_dir }}/inc_template.yml"
+      vars:
+        template_name: "gen_mac_address_intf.j2"
+        template_dest: "{{ report_dir }}/tmp/10_{{inventory_hostname}}_found_mac_intf.txt"
+      check_mode: false
+      changed_when: false
+      delegate_to: localhost
+
+    - assemble:
+        remote_src: false
+        src: "{{ report_dir }}/tmp/"
+        dest: "{{ report_dir }}/tmp/mac_address_found.yml"
+        regexp: ".*\\.txt"
+      changed_when: false
+      run_once: true
+      delegate_to: localhost
+
+    - name: Read Result
+      include_vars:
+        file: "{{ report_dir }}/tmp/mac_address_found.yml"
+      changed_when: false
+      run_once: true
+      delegate_to: localhost
+
+    - debug:
+        msg: "{{ mac_address_found | to_nice_yaml }}"
+      delegate_to: localhost
+      run_once: true
+      tags: [print_action]

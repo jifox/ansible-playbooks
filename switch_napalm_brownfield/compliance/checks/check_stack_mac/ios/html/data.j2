@@ -1,0 +1,10 @@
+{% if stack_mac_persistent_is_configured %}
+{%   set statusline='<td>ok</td>' %}
+{% else %}
+{%   if stack_mac_is_stack %}
+{%     set statusline='<td bgcolor="#ED5466">ERROR: stack-mac persistent ist nicht konfiguriert.!</td>' %}
+{%   else %}
+{%     set statusline='<td>---</td>' %}
+{%   endif %}
+{% endif %}
+<tr><td>{{ inventory_hostname | e}}</td>{{ statusline }}</tr>

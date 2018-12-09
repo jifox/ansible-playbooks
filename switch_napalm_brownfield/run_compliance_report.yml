@@ -1,0 +1,8 @@
+---
+# file: run_compliance_report.yml
+#
+# commandline parameter: -e rep_fmt=[txt | html]  (default html if not defined)
+#
+
+# Neccessary to use inventory and config from current directory
+- import_playbook: "./compliance/checks/run_all_checks.yml"

@@ -1,0 +1,15 @@
+{% set ns = namespace(is_in_block = false) %}
+{% set ns.searchfor = '^banner\s+' ~ banner_name ~ '\s+\^C$$' %}
+{% for line in src_config.split('\n') %}
+{%   set found=line | regex_search(ns.searchfor) %}
+{%   if found %}
+{%     set ns.is_in_block = true %}
+{%   endif %}
+{%   if ns.is_in_block %}
+{%     if line == '^C' %}
+{%       set ns.is_in_block = false %}
+{%     endif %}
+{%   else %}
+{{     line }}
+{%   endif %}
+{% endfor %}

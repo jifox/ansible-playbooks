@@ -1,0 +1,9 @@
+---
+
+- hosts: all
+  gather_facts: false
+  connection: local
+
+  tasks:
+
+    - include_tasks: "{{ include_dir }}/inc_validate_directories.yml"

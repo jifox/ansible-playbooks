@@ -1,0 +1,78 @@
+---
+
+#
+# file: inc_validate_uplinks_db_one_uplink.yml
+#
+# Paramters:
+#   check_uplink_id: key of switch_uplinks:
+#
+
+- assert:
+    msg: "Error: invalid or Missing Parameter 'check_uplink_id':  "
+    that:
+      - switch_uplinks[check_uplink_id] is defined
+  check_mode: false
+  delegate_to: localhost
+
+- name: Check for Invalid interface-name in uplinks_db.yml
+  assert:
+    msg: "Invalid interface '{{ item }}' for device '{{inventory_hostname}}' in uplinks_db.yml "
+    that:
+      - (item | client_intf_str).name != ""
+      - (item | client_intf_str).number != ""
+  loop: "{{ check_intf_list[inventory_hostname] }}"
+  check_mode: false
+  delegate_to: localhost
+
+- assert:
+    msg: "Illegal uplink_type {{switch_uplinks[check_uplink_id].uplink_type}}. Must be 'access', 'trunk' or 'channel'"
+    that:
+      - switch_uplinks[check_uplink_id].uplink_type is not defined or switch_uplinks[check_uplink_id].uplink_type is in ["access", "trunk", "channel"]
+  check_mode: false
+  delegate_to: localhost
+
+- assert:
+    msg: "Illegal channel_linktype {{switch_uplinks[check_uplink_id].channel_linktype}}. Must be 'active', 'desirable' or 'on'"
+    that:
+      - switch_uplinks[check_uplink_id].channel_linktype in ["active", "desirable", "on" ]
+  check_mode: false
+  when:
+    - switch_uplinks[check_uplink_id].uplink_type == "channel"
+  delegate_to: localhost
+
+
+- set_fact:
+    is_channel: "{{ switch_uplinks[check_uplink_id].uplink_type | default('channel') == 'channel'}}"
+  check_mode: false
+  delegate_to: localhost
+
+# - debug:
+#     msg: "is_channel: {{ is_channel }}\n {{ switch_uplinks[check_uplink_id] | to_nice_yaml }}"
+#   check_mode: false
+#   delegate_to: localhost
+#   tags: [print_action]
+
+- assert:
+    msg: "Missing required parameter 'channel_nr_left' or 'channel_nr_right' for '{{ check_uplink_id }}'"
+    that:
+      - not is_channel or (is_channel and (switch_uplinks[check_uplink_id].channel_nr_left is defined))
+      - not is_channel or (is_channel and (switch_uplinks[check_uplink_id].channel_nr_right is defined))
+  check_mode: false
+  delegate_to: localhost
+
+- assert:
+    msg: "Illegal native_vlan {{switch_uplinks[check_uplink_id].native_vlan}} is not defined in vlan_db."
+    that:
+      - vlan_db.vlan_defines[switch_uplinks[check_uplink_id].native_vlan] is defined
+  check_mode: false
+  when:
+    - switch_uplinks[check_uplink_id].native_vlan is defined
+  delegate_to: localhost
+
+- assert:
+    msg: "Invalid interface count for uplink_type {{ switch_uplinks[check_uplink_id].uplink_type }}! If more than one interface should be used, set linktype to 'channel'"
+    that:
+      - switch_uplinks[check_uplink_id].interfaces_left | length == 1
+  when:
+    - switch_uplinks[check_uplink_id].uplink_type is defined and switch_uplinks[check_uplink_id].uplink_type in ['trunk', 'access']
+  delegate_to: localhost

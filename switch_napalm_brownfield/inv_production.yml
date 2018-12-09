@@ -1,0 +1,24 @@
+---
+#
+# file: inv_production.yml
+#
+# Inventory for production environment
+#
+all:
+  vars:
+    is_develop: false
+  children:
+
+    # All switches
+    switches:
+      # All switches
+
+      children:
+        ios:
+          # All IOS Switches (valid modules: ios_config, ios_facts, ios_vlan, ios_l2_interface)
+          children:
+            lab:
+              # All IOS Switches in Bruck
+              hosts:
+                R01:
+                  ansible_host: 192.168.13.253

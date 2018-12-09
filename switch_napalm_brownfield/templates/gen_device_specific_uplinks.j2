@@ -1,0 +1,86 @@
+{% set version_expected = "1.0" %}
+#   channel_linktype:  (required for channel) Link aggregation mode
+#                        ["active" <--default | "desirable" | "on"]
+#   channel_nr_left:   (required for channel) Port-channel number on left device if uplink_type == channel
+#   channel_nr_right:  (required for channel) Port-channel number on right device if uplink_type == channel
+#   description:       (optional) else default description will be generated
+#   interface_left:    interfaces on left device (must be same count than interfaces_right) [Te | Gi | et | Po]
+#   interface_right:   interfaces on right device (must be same count than interfaces_left) [Te | Gi | et | Po]
+#   key:               IMPORTANT: NAMING CONVENTION
+#                        1.) inventory_hostname of left device - alphabetically smaller than right device
+#                                                                this assures that no duplicates are defined
+#                        2.) underline character '_'
+#                        3.) inventory_hostname of right device
+#                        4.) (optional) underline character '_'
+#                        5.) (optional) unique identifier to allow multiple connections between devices
+#   native_vlan:       (optional - default: switchport_default_vlan_id) vlan for access port or
+#                      untagged vlan for channels and trunks.
+#                      allowed VLANs are all vlans that are defined for this device
+#   root_guard:        (optional) Enable spanning-tree guard root [ true | false <-- default ]
+#   uplink_type:       access | trunk | channel <-- default
+{% set ns = namespace() %}
+{% set ns.is_first = true %}
+{% for ul in switch_uplinks %}
+{%   set dev = ul.split('_') %}
+{%   set dic = switch_uplinks[ul] %}
+{%   set utype = dic.uplink_type | default('channel') %}
+{%   set linktype = dic.channel_linktype | default('active') %}
+{%   set is_my_device = false %}
+{%   set nvlan = dic.native_vlan | default(switchport_default_vlan_id) %}
+{%   set avlan = dic.allowed_vlans | default(uplink_default_allowed_vlans) %}
+{%   set rguard = dic.root_guard | default(false) %}
+{%   if inventory_hostname == dev[0] %}
+{#     left device found #}
+{%     set dev_local = dev[0] %}
+{%     set dev_remote = dev[1] %}
+{%     set is_my_device = true %}
+{%     set intf = dic.interfaces_left %}
+{%     set intf_remote = dic.interfaces_right %}
+{%     if utype == 'channel' %}
+{%       set channel_local = dic.channel_nr_left %}
+{%       set channel_remote = dic.channel_nr_right %}
+{%     endif %}
+{%   elif inventory_hostname == dev[1] %}
+{#     right device found #}
+{%     set dev_local = dev[1] %}
+{%     set dev_remote = dev[0] %}
+{%     set is_my_device = true %}
+{%     set intf = dic.interfaces_right %}
+{%     set intf_remote = dic.interfaces_left %}
+{%     if utype == 'channel' %}
+{%       set channel_local = dic.channel_nr_right %}
+{%       set channel_remote = dic.channel_nr_left %}
+{%     endif %}
+{%   endif %}
+{%   if is_my_device %}
+{%     if utype == 'channel' %}
+{%       set desc = dic.description | default('Po' ~ channel_local ~ ' - ' ~ dev_local ~ ' to ' ~ dev_remote) ~ ' - Po' ~ channel_remote %}
+{%     else %}
+{%       set desc = dic.description | default(dev_local ~ " to " ~ dev_remote)  %}
+{%     endif %}
+{%     if ns.is_first  %}
+{%       set ns.is_first = false %}
+device_uplinks:
+  uplinks_version: "{{ switch_uplinks_version }}"
+  uplinks:
+{%     endif %}
+{#    COMMON BLOCK #}
+    - remote: "{{ dev_remote }}"
+      description: "{{ desc }}"
+      uplink_type: "{{ utype}}"
+      native_vlan: "{{ nvlan }}"
+{%     if utype == 'trunk' %}
+      allowed_vlans: "{{ avlan }}"
+{%     elif utype == 'channel' %}
+      allowed_vlans: "{{ avlan }}"
+      channel_linktype: "{{ linktype }}"
+      channel_nr: { local: "{{ channel_local }}", remote: "{{ channel_remote }}" }
+{%     endif %}
+      root_guard: {{ rguard | lower }}
+      interface_count: {{ intf | length }}
+      interfaces:
+{%     for i in range(0, intf | length) %}
+        - {{ i }}: { local: "{{ intf[i] }}", remote: "{{ intf_remote[i] }}" }
+{%     endfor %}
+{%   endif %}
+{% endfor %}

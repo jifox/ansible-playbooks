@@ -1,0 +1,39 @@
+---
+#
+# file: gen_device_specific_uplinks.yml
+#
+
+- hosts: switches
+  become: false
+  gather_facts: false
+
+
+  vars:
+    template_name: "gen_device_specific_vlan_data.j2"
+    template_dest: "{{ host_tmpdir }}/{{inventory_hostname}}_device_vlans.yml"
+    device_vars_dest: "{{ base_dir }}/host_vars/{{ inventory_hostname }}/device_vlans.yml"
+
+  tasks:
+
+    #######################################################################
+    # Initialize environment
+    #######################################################################
+
+    - name: "Read all configuration definitions"
+      include_vars:
+        dir: "{{ vars_dir }}/{{ switch_location_group }}"
+      check_mode: false
+      delegate_to: localhost
+
+    - name: Ensure directories exists
+      include_tasks: "{{ include_dir }}/inc_validate_directories.yml"
+      check_mode: false
+      delegate_to: localhost
+
+    - name: Ensure host_vars directory exists
+      file:
+        path: "{{ base_dir }}/host_vars/{{ inventory_hostname }}"
+        state: directory
+      check_mode: false
+      delegate_to: localhost
+

@@ -1,0 +1,213 @@
+---
+# file: run_all_checks.yml
+#
+# commandline parameter: -e rep_fmt=[txt | html]
+#
+- hosts: ios
+  gather_facts: no
+  become: no
+  serial: 100%
+
+  vars:
+    checks_to_run:
+      - check_available_ports
+      - check_client_port_config
+      - check_ntp_sync
+      - check_os_version
+      - check_dot1x
+      - check_stack_mac
+
+    compliance_report_dir: "{{ report_dir }}/compliance_report"
+    publish_filename: "{{ www_dir }}/network_compliance_report.html"
+
+  tasks:
+    # ########################################
+    # Prepare Report Generation
+    # ########################################
+    - name: Setup report output type
+      set_fact:
+        report_fmt: "{{ rep_fmt | default('html') }}"
+        datetime_str: "{{ lookup('pipe','date \"+%Y-%m-%d %H:%M:%S\"') }}"
+      delegate_to: localhost
+
+    - include_tasks: "{{ include_dir }}/inc_validate_directories.yml"
+      run_once: true
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Ensure directories exist
+      block:
+        - file:
+            path: "{{ config_dir }}"
+            state: directory
+          changed_when: false
+        - file:
+            path: "{{ compliance_report_dir }}"
+            state: directory
+          changed_when: false
+      check_mode: false
+      delegate_to: localhost
+
+    - name: Ensure Empty temporary report directoriy exist
+      block:
+        - file:
+            path: "{{ compliance_report_dir }}/tmp"
+            state: absent
+          changed_when: false
+        - file:
+            path: "{{ compliance_report_dir }}/tmp"
+            state: directory
+          changed_when: false
+        - file:
+            path: "{{ host_tmpdir }}/tmp"
+            state: absent
+          changed_when: false
+        - file:
+            path: "{{ host_tmpdir }}/tmp"
+            state: directory
+          changed_when: false
+      delegate_to: localhost
+
+    # - name: Create empty temp data from Report Directory
+    #   file:
+    #     path: "{{ report_dir }}/{{ item }}"
+    #     state: absent
+    #   loop: "{{ checks_to_run }}"
+    #   run_once: yes
+    #   changed_when: no
+    #   delegate_to: localhost
+    # - file:
+    #     path: "{{ report_dir }}/{{ item }}"
+    #     state: directory
+    #     recurse: yes
+    #   loop: "{{ checks_to_run }}"
+    #   run_once: yes
+    #   changed_when: no
+    #   delegate_to: localhost
+
+    # ########################################
+    # Gather common data from devices
+    # ########################################
+    - name: Gather common facts for compliance checks
+      block:
+        - ios_facts:
+
+        - napalm_get_facts:
+            hostname: "{{ ansible_host  }}"
+            username: "{{ ansible_user }}"
+            dev_os: "{{ ansible_network_os }}"
+            password: "{{ ansible_ssh_pass }}"
+            filter:
+              - "facts"
+              - "config"
+              - "interfaces_counters"
+              - "snmp_information"
+
+        - name: Get structured data from cli output
+          block:
+            - ios_command:
+                commands:
+                  - show version
+              register: show_version_result
+            - ios_command:
+                commands:
+                  - show interfaces
+              register: show_interfaces_result
+            - ios_command:
+                commands:
+                  - show vlan
+              register: show_vlan_result
+            - ios_command:
+                commands:
+                  - show dot1x
+              register: show_dot1x_restult
+
+            - set_fact:
+                textfsm_version_info: "{{ show_version_result.stdout[0] | parse_cli_textfsm(textfsm_template_dir ~ '/cisco_ios_show_version.template') }}"
+                textfsm_show_run_interfaces_part: "{{ napalm_config.running | parse_cli_textfsm(textfsm_template_dir ~ '/cisco_ios_show_run_interface_part.template') }}"
+                textfsm_show_interfaces: "{{ show_interfaces_result.stdout[0] | parse_cli_textfsm(textfsm_template_dir ~ '/cisco_ios_show_interfaces.template') }}"
+                textfsm_show_vlan: "{{ show_vlan_result.stdout[0] | parse_cli_textfsm(textfsm_template_dir ~ '/cisco_ios_show_version.template') }}"
+                dot1x_sysauthcontrol: "{{ 'Disabled' if show_dot1x_restult.stdout[0].find('Enabled') == -1 else 'Enabled' }}"
+                auth_mac_move_permit: "{{ 'Disabled' if napalm_config.running.find('authentication mac-move permit') == -1 else 'Enabled' }}"
+              delegate_to: localhost
+
+        # - name: Display all
+        #   debug:
+        #     msg: "{{ show_dot1x_restult.stdout[0] | to_nice_yaml(indent=4) }}"
+        #   tags: [print_action]
+
+    # ########################################
+    # Run all checks
+    # ########################################
+    - name: Execute Report Header
+      include_tasks: "{{ playbook_dir }}/report_header/run_check.yml"
+      vars:
+        header_template_name: "{{ playbook_dir }}/report_header/{{ report_fmt }}/header.j2"
+        header_output_name: "{{ compliance_report_dir }}/tmp/0_2_report_header.{{report_fmt}}"
+      delegate_to: localhost
+
+    - name: Execute all checks
+      include_tasks: "{{ playbook_dir }}/{{ current_check }}/run_check.yml"
+      vars:
+        header_template_name: "{{ playbook_dir }}/{{ current_check }}/{{ ansible_network_os }}/{{ report_fmt }}/header.j2"
+        data_template_name: "{{ playbook_dir }}/{{ current_check }}/{{ ansible_network_os }}/{{ report_fmt }}/data.j2"
+        footer_template_name: "{{ playbook_dir }}/{{ current_check }}/{{ ansible_network_os }}/{{ report_fmt }}/footer.j2"
+
+        header_output_name: "{{ compliance_report_dir }}/tmp/{{ current_idx + 1 }}_2_{{ current_check }}.{{report_fmt}}"
+        data_output_name: "{{ compliance_report_dir }}/tmp/{{ current_idx + 1 }}_5_{{ inventory_hostname }}_{{ current_check }}.{{report_fmt}}"
+        footer_output_name: "{{ compliance_report_dir }}/tmp/{{ current_idx + 1 }}_7_{{ current_check }}.{{report_fmt}}"
+
+        historical_data_dir: "{{ report_dir }}/data"
+      ignore_errors: true
+      loop: "{{ checks_to_run | flatten(levels=1) }}"
+      loop_control:
+        loop_var: current_check
+        index_var: current_idx
+
+    - name: Execute Report Footer
+      include_tasks: "{{ playbook_dir }}/report_footer/run_check.yml"
+      vars:
+        footer_template_name: "{{ playbook_dir }}/report_footer/{{ report_fmt }}/footer.j2"
+        footer_output_name: "{{ compliance_report_dir }}/tmp/9999_7_report_footer.{{report_fmt}}"
+      delegate_to: localhost
+
+
+    # ########################################
+    # Assemble reports
+    # ########################################
+    # - name: Assemble all Reports into header_output directory
+    #   assemble:
+    #     src: "{{ report_dir }}/{{ current_check }}"
+    #     dest: "{{ report_dir }}/report_header/5_{{ current_check }}.{{report_fmt}}"
+    #     regexp: "*.{{report_fmt}}"
+    #   when:
+    #     - current_check != 'report_header'
+    #     - current_check != 'report_footer'
+    #   loop: "{{ checks_to_run }}"
+    #   loop_control:
+    #     loop_var: current_check
+    #   changed_when: no
+    #   delegate_to: localhost
+
+    # - name: Assemble footer into header_output directory
+    #   assemble:
+    #     src: "{{ report_dir }}/report_footer"
+    #     dest: "{{ report_dir }}/report_header/7_report_footer.{{report_fmt}}"
+    #   changed_when: no
+    #   delegate_to: localhost
+
+    - name: Assemble common report into report directory
+      block:
+        - set_fact:
+            rep_dest_file_name: "{{ compliance_report_dir }}/compliance_reports_{{ lookup('pipe','date \"+%Y%m%d-%H%M%S\"') }}.{{report_fmt}}"
+        - assemble:
+            src: "{{ compliance_report_dir }}/tmp"
+            dest: "{{ rep_dest_file_name }}"
+          changed_when: no
+        - copy:
+            src: "{{ rep_dest_file_name }}"
+            dest: "/var/www/html/reports/network_compliance_report.html"
+          become: yes
+          changed_when: no
+      run_once: yes
+      delegate_to: localhost

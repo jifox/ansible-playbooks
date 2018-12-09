@@ -1,0 +1,32 @@
+---
+#
+# file: gen_vlan_configuration.yml
+#
+- hosts: switches
+  become: false
+  gather_facts: false
+
+  vars:
+    dest_filename_part: "vlan_configuration"
+    dest_filename: "{{ config_dir }}/{{ inventory_hostname }}_{{dest_filename_part}}.{{ ansible_network_os }}"
+    template_name: "config_vlans.j2"
+
+  tasks:
+
+    - name: Ensure configuration directory esists
+      file:
+        path: "{{ config_dir }}"
+        state: directory
+      delegate_to: localhost
+      check_mode: false
+
+    - include_vars:
+        file: "{{ vars_dir }}/{{ switch_location_group }}/vlan_db.yml"
+      check_mode: false
+      delegate_to: localhost
+
+    - template:
+        src: "{{ template_dir }}/{{ ansible_network_os }}/{{ template_name }}"
+        dest: "{{ dest_filename }}"
+        lstrip_blocks: true
+      delegate_to: localhost

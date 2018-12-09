@@ -1,0 +1,104 @@
+---
+# file: run_client_port_detail_report.yml
+#
+- hosts: ios
+  gather_facts: no
+  become: no
+  serial: 100%
+
+  vars:
+    my_report_dir: "{{ report_dir }}/client_port_details"
+    snap_path: "~/snapshots_rep"
+
+  tasks:
+    # ########################################
+    # Prepare Report Generation
+    # ########################################
+    - name: Setup report output type
+      set_fact:
+        report_fmt: "{{ rep_fmt | default('html') }}"
+        datetime_str: "{{ lookup('pipe','date \"+%Y-%m-%d %H:%M:%S\"') }}"
+      delegate_to: localhost
+
+    - name: Remove temp data from Report Directory
+      block:
+        - file:
+            path: "{{ my_report_dir }}/{{ inventory_hostname }}"
+            state: absent
+          changed_when: no
+        - file:
+            path: "{{ my_report_dir }}/{{ inventory_hostname }}"
+            state: directory
+            recurse: yes
+          changed_when: no
+      delegate_to: localhost
+
+
+    # ########################################
+    # Gather common data from devices
+    # ########################################
+    - name: Gather common facts for compliance checks
+      block:
+        - ios_facts:
+
+        - napalm_get_facts:
+            hostname: "{{ ansible_host  }}"
+            username: "{{ ansible_user }}"
+            dev_os: "{{ ansible_network_os }}"
+            password: "{{ ansible_ssh_pass }}"
+            filter:
+              - "facts"
+              - "config"
+              - "interfaces_counters"
+              - "snmp_information"
+              - "lldp_neighbors_detail"
+
+        - name: Get structured data from cli output
+          block:
+            - ios_command:
+                commands:
+                  - show version
+              register: show_version_result
+            - ios_command:
+                commands:
+                  - show interfaces
+              register: show_interfaces_result
+            - ios_command:
+                commands:
+                  - show vlan
+              register: show_vlan_result
+
+            - set_fact:
+                textfsm_version_info: "{{ show_version_result.stdout[0] | parse_cli_textfsm(textfsm_template_dir ~ '/cisco_ios_show_version.template') }}"
+                textfsm_show_run_interfaces_part: "{{ napalm_config.running | parse_cli_textfsm(textfsm_template_dir ~ '/cisco_ios_show_run_interface_part.template') }}"
+                textfsm_show_interfaces: "{{ show_interfaces_result.stdout[0] | parse_cli_textfsm(textfsm_template_dir ~ '/cisco_ios_show_interfaces.template') }}"
+                textfsm_show_vlan: "{{ show_vlan_result.stdout[0] | parse_cli_textfsm(textfsm_template_dir ~ '/cisco_ios_show_version.template') }}"
+              delegate_to: localhost
+
+
+    # ########################################
+    # Generate Reports
+    # ########################################
+    - name: Generate client_port_detail_report
+      template:
+        src: "{{ template_dir }}/{{ ansible_network_os }}/rep_client_port_details.j2"
+        dest: "{{ my_report_dir }}/{{ inventory_hostname }}_client_port_details.html"
+      delegate_to: localhost
+
+
+    # ########################################
+    # Deploy Reports
+    # ########################################
+    - name: Assemble common report into report directory
+      block:
+        - copy:
+            src: "{{ my_report_dir }}/{{ inventory_hostname }}_client_port_details.html"
+            dest: "{{ www_dir }}/{{ inventory_hostname }}_client_port_details.html"
+          become: yes
+      delegate_to: localhost
+
+    # # LAST TASK - create snapshot
+    # - name: snapshot hostvars
+    #   include_tasks: "{{ include_dir }}/inc_snapshot.yml"
+    #   changed_when: false
+    #   check_mode: no

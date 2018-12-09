@@ -1,0 +1,10 @@
+
+---
+
+# FOOTER
+- name: Generate footer Output
+  template: 
+    src: "{{ footer_template_name }}"
+    dest: "{{ footer_output_name }}"
+  run_once: yes
+  delegate_to: localhost

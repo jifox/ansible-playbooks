@@ -1,0 +1,10 @@
+{% set date_time = ('' ~ template_run_date).split('.')[0] %}
+<h2 id="{{ current_check }}">Stack-MAC persistent - Report</h2>
+
+<table style="font-family:arial,helvetica,sans-serif; font-size:4;">
+  <tr><td>Report vom: {{ date_time }}</td></tr>
+  <tr><td>Stack-MAC persistent timer 0 sorgt dafür, dass sich auch bei einem Ausfall des Master-Chassis die Stack-ID nicht ändert (LACP, ...)</td></tr>
+</table>
+&nbsp;<p>
+<table class="TFtable">
+	<tr><th>Switch</th><th>Stack-MAC persistent-Status</th></tr>

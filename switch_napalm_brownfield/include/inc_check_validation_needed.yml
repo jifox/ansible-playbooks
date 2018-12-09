@@ -1,0 +1,128 @@
+---
+#
+# file: inc_check_validation_needed.yml
+#
+# determines if
+#
+# Parameters:
+#  validation_flags_directory:
+#  validation_flag_filename:
+#  validation_result: false # true
+#
+# Result:
+#  do_validate: true/false
+#
+# Sample playbook:
+#
+# - name: Validate vlan_db if validation is needed
+#   include_tasks: "{{ include_dir }}/inc_check_validation_needed.yml"
+#   vars:
+#     file_to_validate: "{{ vars_dir }}/{{switch_location_group}}/vlan_db.yml"
+#     validation_include_tasks_name: "inc_validate_vlan_db_tasks.yml"
+#     validation_flag_filename: "vlan_db.okay"
+#     validation_result: false
+#   delegate_to: localhost
+#
+# Because set_var from included tasks will not be reflected into the calling
+# playbook, the following code snippet need to be added to the includefile
+#
+# !!! ADD TO "{{ include_dir }}/{{ validation_include_tasks_name }}" FILE !!!
+#
+# ####################################################################
+# # Set Successful Validated Flag if validation_result == true
+# ####################################################################
+# - block:
+#     - file:
+#         path: "{{ validation_flags_directory }}"
+#         state: directory
+#       changed_when: false
+#     - file:
+#         path: "{{ valid_fname }}"
+#         state: touch
+#       changed_when: false
+#   check_mode: false
+#   delegate_to: localhost
+#
+- assert:
+    msg: |
+         inc_check_validation_needed: Missing paramter!
+         file_to_validate: {{ file_to_validate | default('MISSING') }}
+         validation_flag_filename: {{ validation_flag_filename | default('MISSING') }}
+         validation_include_tasks_name: {{ validation_include_tasks_name | default('MISSING') }}
+    that:
+      - file_to_validate is defined
+      - validation_flag_filename is defined
+      - validation_include_tasks_name is defined
+  delegate_to: localhost
+
+- block:
+    - set_fact:
+        validation_flags_directory: "{{ base_dir }}/configs/validated/{{switch_location_group}}"
+        do_validate: false
+    - set_fact:
+        valid_fname: "{{ validation_flags_directory }}/{{ validation_flag_filename }}"
+  delegate_to: localhost
+
+####################################################################
+# Check if validation is needed and execute tasks
+# if validation_result==false or not defined
+####################################################################
+- name: Determine if validation is needed
+  block:
+    - stat:
+        path: "{{ valid_fname }}"
+      changed_when: false
+      register: last_successful_validation
+    - stat:
+        path: "{{ file_to_validate }}"
+      changed_when: false
+      register: last_modified
+    - set_fact:
+        do_validate: "{{ false if (last_successful_validation.stat.exists and last_successful_validation.stat.mtime > last_modified.stat.mtime) else true }}"
+      delegate_to: localhost
+  when:
+    - validation_result == false
+  check_mode: false
+  delegate_to: localhost
+
+# - debug:
+#     msg: |
+#       do_validate: {{ do_validate }}
+#       last_successful_validation: {{ last_successful_validation }}
+#       last_modified: {{ last_modified }}
+#   check_mode: false
+#   delegate_to: localhost
+#   tags: [print_action]
+
+# Execute validation task because data was modified after last validation
+- include_tasks: "{{ include_dir }}/{{ validation_include_tasks_name }}"
+  when:
+    - do_validate
+  check_mode: false
+  delegate_to: localhost
+
+# - debug:
+#     msg: "After Include: validation_result: {{ validation_result }}"
+#   check_mode: false
+#   delegate_to: localhost
+#   tags: [print_action]
+
+#
+# !!! ADD TO "{{ include_dir }}/{{ validation_include_tasks_name }}" FILE !!!
+#
+# ####################################################################
+# # Set Successful Validated Flag if validation_result == true
+# ####################################################################
+# - block:
+#     - file:
+#         path: "{{ validation_flags_directory }}"
+#         state: directory
+#       changed_when: false
+#     - file:
+#         path: "{{ valid_fname }}"
+#         state: touch
+#       changed_when: false
+#   when:
+#     - validation_result
+#   check_mode: false
+#   delegate_to: localhost

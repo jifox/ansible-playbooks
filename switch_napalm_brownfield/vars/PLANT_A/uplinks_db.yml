@@ -1,0 +1,64 @@
+---
+# switch_uplinks:   used to define all uplinks between network devices.
+#   allowed_vlans:     (optional) if defined than this vlan-list will be used, else the default allowed
+#                      vlans defined in 'uplink_default_allowed_vlans:' are used
+#   channel_linktype:  (required for channel) Link aggregation mode
+#                        ["active" <--default | "desirable" | "on"]
+#   channel_nr_left:   (required for channel) Port-channel number on left device if uplink_type == channel
+#   channel_nr_right:  (required for channel) Port-channel number on right device if uplink_type == channel
+#   description:       (optional) else default description will be generated
+#   interface_left:    interfaces on left device (must be same count than interfaces_right)
+#                        "et" - eth
+#                        "Fa" - FastEthernet
+#                        "Gi" - GigabitEthernet
+#                        "Te" - TenGigabitEthernet
+#                        "Tw" - TwentyfiveGigabitEthernet
+#                        "Fo" - FortyGigabitEthernet
+#                        "Hu" - HundredGigabitEthernet
+#                        "Lo" - Loopback
+#                        "Ma" - Management
+#                        "Po" - ""      # only port number will be set
+#   interface_right:   interfaces on right device (must be same count than interfaces_left)
+#                        [Te | Gi | ...]
+#   key:               IMPORTANT: NAMING CONVENTION
+#                        1.) inventory_hostname of left device - alphabetically smaller than right device
+#                                                                this assures that no duplicates are defined
+#                        2.) underline character '_'
+#                        3.) inventory_hostname of right device
+#                        4.) (optional) underline character '_'
+#                        5.) (optional) unique identifier to allow multiple connections between devices
+#   native_vlan:       (optional - default: switchport_default_vlan_id) vlan for access port or
+#                      untagged vlan for channels and trunks.
+#   root_guard:        (optional) Enable spanning-tree guard root [ true | false <-- default ]
+#   uplink_type:       access | trunk | channel <-- default
+#
+
+# Default for allowed vlans if not defined
+uplink_default_allowed_vlans: "1-3,5-4094"
+
+switch_uplinks_version: "1.0"
+
+switch_uplinks:
+  # CORE SWITCH ATBRACSC001 ------------------
+  "R01_FIREWALL":
+    uplink_type: trunk
+    interfaces_left: [Te1/0/7]
+    interfaces_right: [et3]
+    native_vlan: "100"
+  "R01_VMWARE01":
+    uplink_type: channel
+    channel_linktype: "on"
+    channel_nr_left: "1"
+    channel_nr_right: "1"
+    description: "to ESX01 (20G)"
+    native_vlan: "10"
+    allowed_vlans: "1,4,6,40,100"
+    root_guard: true
+    interfaces_left: [Te1/0/1, Te1/0/2]
+    interfaces_right: [Po1.1, Po3.1]
+  "R01_WLC01":
+    uplink_type: trunk
+    allowed_vlans: "10,20,40,50,60,62,100"
+    native_vlan: "10"
+    interfaces_left: [Te1/0/8]
+    interfaces_right: [Et0]

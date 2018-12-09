@@ -1,0 +1,24 @@
+---
+#
+# file: run_ios_download_os_update.yml
+#
+
+- hosts: ios
+  gather_facts: no
+  become: no
+  serial: 100%
+
+  tasks:
+    - name: Gater Facts
+      ios_facts:
+
+    - set_fact:
+        switch_type: "{{ ansible_net_model[:5] }}"
+
+    - debug:
+        msg: "{{ inventory_hostname}}"
+      delegate_to: localhost
+      when:
+        - switch_type == 'C9300'
+      tags: [print_action]
+

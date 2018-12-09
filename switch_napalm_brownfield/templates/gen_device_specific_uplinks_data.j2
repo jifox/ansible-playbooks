@@ -1,0 +1,78 @@
+{% set ns = namespace() %}
+---
+#
+# file: host_vars/{{inventory_hostname}}/device_uplinks.yml
+#
+# Don't modify: Automatically generated files will be overwritten
+#               see: vars/{{switch_location_group}}/uplinks_db.yml
+#               playbook: gen_device_specific_vars_from_fabric.yml
+#
+
+device_uplinks:
+{% for lt in ['channel', 'trunk', 'access' ] %}
+{%   set ns.is_first = true %}
+{%   set ns.index = 0 %}
+{%   for ul in switch_uplinks %}
+{%     set dev = ul.split('_') %}
+{%     set dic = switch_uplinks[ul] %}
+{%     set ns.utype = dic.uplink_type | default('channel') %}
+{%     if ns.utype == lt and (dev[0] == inventory_hostname or dev[1] == inventory_hostname) %}
+{#       data for current device found  #}
+{%       set ns.nvlan = dic.native_vlan | default(switchport_default_vlan_id) %}
+{%       set ns.avlan = dic.allowed_vlans | default(uplink_default_allowed_vlans) %}
+{%       set ns.rguard = dic.root_guard | default('false') %}
+{%       if dev[0] == inventory_hostname %}
+{%         set ns.dev_rem = dev[1] %}
+{%         set ns.intf_loc = dic.interfaces_left %}
+{%         set ns.intf_rem = dic.interfaces_right %}
+{%       else %}
+{%         set ns.dev_rem = dev[0] %}
+{%         set ns.intf_rem = dic.interfaces_left %}
+{%         set ns.intf_loc = dic.interfaces_right %}
+{%       endif %}
+{%       if lt == 'channel' %}
+{%         set ns.ch_linkype = dic.channel_linktype | default('active') %}
+{%         if dev[0] == inventory_hostname %}
+{%           set ns.ch_nr_loc = dic.channel_nr_left %}
+{%           set ns.ch_nr_rem = dic.channel_nr_right %}
+{%         else %}
+{%           set ns.ch_nr_rem = dic.channel_nr_left %}
+{%           set ns.ch_nr_loc = dic.channel_nr_right %}
+{%         endif %}
+{%       endif %}
+{%       set ns.index = ns.index + 1 %}
+{#  emit - linktype group 'channel_uplinks, trunk_uplinks or access uplinks #}
+{%       if ns.is_first %}
+{%         set ns.is_first = false %}
+
+  {{ lt }}_uplinks:
+{%       endif %}
+    "{{ ns.index }}":
+      device_remote: "{{ ns.dev_rem }}"
+      interface_local: {{ ns.intf_loc }}
+      interface_remote: {{ ns.intf_rem }}
+      native_vlan: "{{ ns.nvlan }}"
+      root_guard: {{ ns.rguard | lower }}
+{%       if lt == 'channel' or lt == 'trunk' %}
+      allowed_vlans: "{{ ns.avlan }}"
+{%       endif %}
+{%       if lt == 'trunk' %}
+      description: "{{ dic.description | default('TRUNK ' ~ inventory_hostname ~ ' to ' ~ ns.dev_rem) }}"
+{%       endif %}
+{%       if lt == 'access' %}
+      description: "{{ dic.description | default('ACCESS ' ~ inventory_hostname ~ ' to ' ~ ns.dev_rem) }}"
+{%       endif %}
+{%       if lt == 'channel' %}
+      description: "{{ dic.description | default('Po' ~ ns.ch_nr_loc ~ ' - ' ~ inventory_hostname ~ ' to ' ~ ns.dev_rem ~ ' - Po' ~ ns.ch_nr_rem) }}"
+      channel_linktype: "{{ ns.ch_linkype }}"
+      channel_nr_local: "{{ ns.ch_nr_loc }}"
+      channel_nr_remote: "{{ ns.ch_nr_rem }}"
+{%       endif %}
+{%     endif %}{# if ns.utype == lt and (dev[0] == inve... #}
+{%   endfor %}
+{%   if ns.is_first %}
+{%     set ns.is_first = false %}
+
+  {{ lt }}_uplinks: []
+{%   endif %}
+{% endfor %}

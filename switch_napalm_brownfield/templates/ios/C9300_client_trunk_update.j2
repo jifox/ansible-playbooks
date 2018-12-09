@@ -1,0 +1,55 @@
+{% set port_channel_number=48 %}
+{% set port_channel_neighbor="IT-BUERO" %}
+{% set port_channel_mode="on" %}
+{% set intf=tmp_uplink_interface | default ("Gi1/0/48") %}
+{%   if port_channel_mode == "on" %}
+{%     set mode_str="TRUNK" %}
+{%   elif port_channel_mode == "desirable" %}
+{%     set mode_str="PAgP" %}
+{%   elif port_channel_mode == "active" %}
+{%     set mode_str="LACP" %}
+{%   endif %}
+! -------------------------------------------------------------------------------
+! TEMP UPLINK for {{ inventory_hostname }} ({{ ansible_host }}) to {{ port_channel_neighbor }}
+! -------------------------------------------------------------------------------
+{%     if intf[:2] == "Te" %}
+{%       set interface="TenGigabitEthernet" %}
+{%     elif intf[:2] == "Gi" %}
+{%       set interface="GigabitEthernet" %}
+{%     elif intf[:2] == "Fo" %}
+{%       set interface="GigabitEthernet" %}
+{%     endif %}
+{%     set interface_nr=intf[2:] %}
+interface {{ interface }}{{ interface_nr }}
+ description {{ interface_nr }} to {{ port_channel_neighbor }} ({{ mode_str }})
+{%     if switchport_voice_vlan_id != "" %}
+ no switchport voice vlan {{ switchport_voice_vlan_id }}
+{%     endif %}
+ switchport mode trunk
+ switchport nonegotiate
+ load-interval 30
+ storm-control broadcast level 5.00
+ storm-control action trap
+ ip dhcp snooping trust
+ exit
+!
+! -------------------------------------------------------------------------------
+! REMOVE TEMP UPLINK after UPDATE
+! -------------------------------------------------------------------------------
+interface {{ interface }}{{ interface_nr }}
+ description {{ interface_nr }} Po{{ port_channel_number }} - {{ port_channel_neighbor }}
+ no channel-group {{ port_channel_number }} mode {{ port_channel_mode }}
+ switchport mode access
+ switchport access vlan {{ switchport_default_vlan_id }}
+{%     if switchport_voice_vlan_id != "" %}
+ switchport voice vlan {{ switchport_voice_vlan_id }}
+{%     endif %}
+ no switchport nonegotiate
+ no load-interval 30
+ no storm-control broadcast level 5.00
+ no storm-control action trap
+{% if config_group != 'C2960' %}
+ ip flow monitor IPv4_STEALTHWATCH_NETFLOW input
+{%     endif %}
+ spanning-tree portfast
+!

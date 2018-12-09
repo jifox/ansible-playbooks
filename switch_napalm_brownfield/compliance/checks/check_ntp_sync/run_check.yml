@@ -1,0 +1,36 @@
+---
+
+# HEADER
+- name: Generate Header 
+  template: 
+    src: "{{ header_template_name }}"
+    dest: "{{ header_output_name }}"
+  run_once: yes
+  delegate_to: localhost
+
+# DATA
+- name: Check if clock is synchronized with NTP server
+  ios_command:
+    commands: 
+      - show ntp status
+  register:
+    ntp_status_output
+
+- name: Define Result
+  set_fact:
+    ntp_server_is_synchronized: "{{ True if ntp_status_output.stdout[0].find('Clock is synchronized') != -1 else False }}"
+  delegate_to: localhost
+
+- name: Generate output for current host
+  template: 
+    src: "{{ data_template_name }}"
+    dest: "{{ data_output_name }}"
+  delegate_to: localhost
+
+# FOOTER
+- name: Generate footer Output
+  template: 
+    src: "{{ footer_template_name }}"
+    dest: "{{ footer_output_name }}"
+  run_once: yes
+  delegate_to: localhost

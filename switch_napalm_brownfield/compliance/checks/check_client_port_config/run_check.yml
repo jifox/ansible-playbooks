@@ -1,0 +1,68 @@
+---
+
+  # ########################################
+  # Prepare Compliant Config
+  # ########################################
+
+- name: Generate Client-Ports Configuration
+  include_tasks: "{{ include_dir }}/inc_template.yml"
+  vars:
+    dest_filename_part: "client_ports.conf"
+    template_dest: "{{ host_tmpdir }}/{{ inventory_hostname }}_client_ports.conf"
+    template_name: "config_client_interfaces.j2"
+  check_mode: false
+  delegate_to: localhost
+
+- set_fact:
+    file_suffix: "client_ports"
+- name: Assemble all the configuration bits
+  assemble:
+    src: "{{ host_tmpdir }}/"
+    dest: "{{ config_dir }}/{{inventory_hostname}}_{{ file_suffix }}.txt"
+  check_mode: false
+  changed_when: false
+  delegate_to: localhost
+  when:
+    - conf_client_ports != []
+
+- name: Compare compliant switchport-config to running-config.
+  napalm_install_config:
+    config_file: "{{ config_dir }}/{{inventory_hostname}}_{{ file_suffix }}.txt"
+    commit_changes: false
+    replace_config: false
+    get_diffs: true
+    diff_file: "{{ config_dir }}/{{inventory_hostname}}_{{ file_suffix }}.diff"
+    hostname: "{{ ansible_host  }}"
+    username: "{{ ansible_user }}"
+    dev_os: "{{ ansible_network_os }}"
+    password: "{{ ansible_ssh_pass }}"
+  register: result
+  when:
+    - conf_client_ports != []
+
+- name: Set Compliance Status
+  set_fact:
+    is_compliant: "{{ conf_client_ports == [] or result.msg == '' }}"
+
+# HEADER
+- name: Generate Header
+  template:
+    src: "{{ header_template_name }}"
+    dest: "{{ header_output_name }}"
+  run_once: true
+  delegate_to: localhost
+
+# DATA
+- name: Generate output for current host
+  template:
+    src: "{{ data_template_name }}"
+    dest: "{{ data_output_name }}"
+  delegate_to: localhost
+
+# FOOTER
+- name: Generate footer Output
+  template:
+    src: "{{ footer_template_name }}"
+    dest: "{{ footer_output_name }}"
+  run_once: true
+  delegate_to: localhost

@@ -1,0 +1,133 @@
+---
+#
+# file: include/inc_validate_vlan_db_tasks.yml
+#
+#   is part of the tasks: valid_vlan_db.yml, gen_device_specific_vars_from_fabric.yml
+#
+- set_fact:
+    expected_vlan_db_version: "1.0"
+    vlan_db_validate_filename: "{{ config_dir }}/validated/{{switch_location_group}}/vlan_db.okay"
+  check_mode: false
+  delegate_to: localhost
+
+- name: Check for duplicate VLAN-ID through linting the vlan_db.yml file
+  block:
+    - shell: yamllint "{{base_dir}}/vars/{{switch_location_group}}/vlan_db.yml"
+      register: lint_result
+      ignore_errors: true
+      changed_when: false
+    - assert:
+        msg: "ansible-lint: {{ lint_result.stderr }}"
+        that:
+          - lint_result.rc == 0
+  check_mode: false
+  delegate_to: localhost
+
+- assert:
+    msg: "Missing Parameter: 'switch_location_group' is not defined."
+    that:
+      - switch_location_group is defined
+  check_mode: false
+  delegate_to: localhost
+
+- name: Ensure that switch_location_group directory is valid
+  stat:
+    path: "{{ vars_dir }}/{{ switch_location_group }}/vlan_db.yml"
+  register: stat_result
+  check_mode: false
+  delegate_to: localhost
+- assert:
+    msg: "Missing File: {{ vars_dir }}/{{ switch_location_group }}/vlan_db.yml or incorrect 'switch_localtion:' variable"
+    that:
+      - stat_result.stat.exists
+  check_mode: false
+  delegate_to: localhost
+
+- name: Read in the vlan_db
+  include_vars:
+    file: "{{ vars_dir }}/{{ switch_location_group }}/vlan_db.yml"
+  check_mode: false
+  changed_when: false
+  delegate_to: localhost
+
+- name: Ensure directories exists
+  include_tasks: "{{ include_dir }}/inc_validate_directories.yml"
+  check_mode: false
+  delegate_to: localhost
+
+
+- assert:
+    msg: "Invalid vlan_db version {{vlan_db.vlan_db_version}} "
+    that:
+      - vlan_db.vlan_db_version == expected_vlan_db_version
+  check_mode: false
+  delegate_to: localhost
+
+
+- assert:
+    msg: "Duplicate Entry at group vars/{{ switch_location_group }}/vlan_db.yml in variable vlan_db.vlan_groups"
+    that: >
+          vlan_db.vlan_groups | list | count
+          ==
+          vlan_db.vlan_groups | list | unique | count
+  check_mode: false
+  delegate_to: localhost
+
+
+- name: Generate vlan_name_list and check for duplicate names
+  block:
+    - include_tasks: "{{ include_dir }}/inc_template.yml"
+      vars:
+        template_name: "gen_vlan_name_list_from_fabric.j2"
+        template_dest: "{{ host_tmpdir }}/{{inventory_hostname}}_vlan_name_list.yml"
+        template_suppress_changed: true
+      changed_when: false
+      check_mode: false
+    - include_vars: "{{ host_tmpdir }}/{{inventory_hostname}}_vlan_name_list.yml"
+      check_mode: false
+      delegate_to: localhost
+    - assert:
+        msg: "Duplicate vlan_name at group vars/{{ switch_location_group }}/vlan_db.yml in variable vlan_db.vlan_groups"
+        that: >
+              vlan_names_list | list | count
+              ==
+              vlan_names_list | list | unique | count
+  check_mode: false
+  delegate_to: localhost
+
+- set_fact:
+   all_vlans: "{{ vlan_db.vlan_defines | flatten }}"
+  check_mode: false
+  delegate_to: localhost
+
+- name: Check vlan_deploy list is in vlan_groups
+  include_tasks: "{{ include_dir }}/inc_validate_vlan_db_check_one_vlan.yml"
+  with_items: "{{ all_vlans }}"
+  loop_control:
+    loop_var: check_vlan_id
+  delegate_to: localhost
+
+
+# ####################################################################
+# # Set Successful Validated Flag if validation_result is defined
+# # WILL NOT WORK BECAUSE CALLING PLAYBOOK WILL NOT BE UPDATED
+# ####################################################################
+# - set_fact:
+#     validation_result: true
+#   check_mode: false
+####################################################################
+# Set Successful Validated Flag
+####################################################################
+- block:
+    - file:
+        path: "{{ validation_flags_directory }}"
+        state: directory
+      changed_when: false
+    - file:
+        path: "{{ valid_fname }}"
+        state: touch
+      changed_when: false
+  check_mode: false
+  delegate_to: localhost
+
+

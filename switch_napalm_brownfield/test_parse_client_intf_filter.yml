@@ -1,0 +1,64 @@
+---
+- hosts: all
+  become: false
+
+  tasks:
+    - set_fact:
+        vfo: "{{ 'fo1/1/1' | client_intf_str }}"
+        vte: "{{ 'Te1/1/2' | client_intf_str }}"
+        vgi: "{{ 'gi1/0/3' | client_intf_str }}"
+        vet: "{{ 'et1.204' | client_intf_str }}"
+        vpo: "{{ 'po5' | client_intf_str }}"
+      delegate_to: localhost
+
+    - set_fact:
+        verr: "{{ 'er6' | client_intf_str }}"
+      ignore_errors: true
+      register: err_expected
+      delegate_to: localhost
+
+    - assert:
+        msg: "Error parsing FortyGigabitEthernet in Filter client_intf_str."
+        that:
+          - vfo.name == "FortyGigabitEthernet"
+          - vfo.number == "1/1/1"
+      delegate_to: localhost
+
+    - assert:
+        msg: "Error parsing TenGigabitEthernet in Filter client_intf_str."
+        that:
+          - vte.name == "TenGigabitEthernet"
+          - vte.number == "1/1/2"
+      delegate_to: localhost
+
+    - assert:
+        msg: "Error parsing GigabitEthernet in Filter client_intf_str."
+        that:
+          - vgi.name == "GigabitEthernet"
+          - vgi.number == "1/0/3"
+      delegate_to: localhost
+
+    - assert:
+        msg: "Error parsing 'eth' in Filter client_intf_str."
+        that:
+          - vet.name == "eth"
+          - vet.number == "1.204"
+      delegate_to: localhost
+
+    - assert:
+        msg: "Error parsing 'Port' in Filter client_intf_str."
+        that:
+          - vpo.name == ""
+          - vpo.number == "5"
+      delegate_to: localhost
+
+    - debug:
+        msg: "{{ err_expected | to_nice_yaml }}"
+      tags: [print_action]
+      delegate_to: localhost
+
+    - assert:
+        msg: "Error: Illegal input should raise an error"
+        that:
+          - err_expected.failed
+      delegate_to: localhost

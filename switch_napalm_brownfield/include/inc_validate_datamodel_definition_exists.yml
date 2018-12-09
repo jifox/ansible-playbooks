@@ -1,0 +1,27 @@
+---
+#
+# file: include/inc_validate_datamodel.yml
+#
+- assert:
+    msg: |
+      Invalid or missing switch_location_group.
+      'switch_location_group' must be a member of 'location_groups' dictionary
+    that:
+      - switch_location_group is defined
+      - location_groups[switch_location_group] is defined
+  check_mode: false
+  delegate_to: localhost
+
+- name: Ensure Data-Model definition directory exists
+  block:
+    - stat:
+        path: "{{ vars_dir }}/{{ switch_location_group }}"
+      register: vars_switch_location_result
+    - assert:
+        msg: "Data-Model definition directory does not exist {{ vars_dir }}/{{ switch_location_group }}"
+        that:
+          - vars_switch_location_result.stat.isdir is defined
+          - vars_switch_location_result.stat.isdir
+  check_mode: false
+  delegate_to: localhost
+

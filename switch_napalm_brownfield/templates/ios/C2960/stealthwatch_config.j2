@@ -1,0 +1,41 @@
+flow record STEALTHWATCH_NETFLOW
+ description NetFlow record format to send to StealthWatch
+ match datalink mac source address input
+ match datalink mac destination address input
+ match datalink vlan input
+ match ipv4 ttl
+ match ipv4 tos
+ match ipv4 protocol
+ match ipv4 source address
+ match ipv4 destination address
+ match transport source-port
+ match transport destination-port
+ match interface input
+ collect interface output
+ collect counter bytes long
+ collect counter packets long
+ collect timestamp absolute first
+ collect timestamp absolute last
+!
+flow exporter STEALTHWATCH_SCVSWFLOW01
+ description Export NetFlow to StealthWatch
+ destination {{ flowcollector_destination }}
+ source Vlan{{ management_vlan_id }}
+!
+flow monitor IPv4_STEALTHWATCH_NETFLOW
+ exporter STEALTHWATCH_SCVSWFLOW01
+ cache timeout active 60
+ record STEALTHWATCH_NETFLOW
+!
+device-tracking policy DT_trunk_policy
+ trusted-port
+ device-role switch
+ no protocol udp
+!
+device-tracking policy DeviceTracking_pol-1
+ limit address-count 1
+ no protocol udp
+!
+device-tracking policy Device_tracking_pol1
+ no protocol udp
+!

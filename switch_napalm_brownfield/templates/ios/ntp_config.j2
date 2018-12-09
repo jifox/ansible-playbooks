@@ -1,0 +1,17 @@
+{% include 'ntp_server_acl.j2' %}
+!
+ntp logging
+{% if management_vlan_id is defined and (config_group !='C6800') %}
+ntp source Vlan{{management_vlan_id}}
+{% endif %}
+!
+{% for ntp in ntp_servers %}
+  {% if ntp.dns != "" %}
+    {% set ntp_ip=lookup('dig', ntp.dns) %}
+  {% else %}
+    {% set ntp_ip=ntp.ip %}
+  {% endif %}
+ntp server {{ ntp_ip }}
+{% endfor %}
+clock calendar-valid
+!

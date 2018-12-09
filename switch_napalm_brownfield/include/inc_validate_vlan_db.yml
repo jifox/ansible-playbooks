@@ -1,0 +1,12 @@
+---
+#
+# file: include/inc_validate_vlan_db.yml
+#
+- name: Validate vlan_db if validation is needed
+  include_tasks: "{{ include_dir }}/inc_check_validation_needed.yml"
+  vars:
+    file_to_validate: "{{ vars_dir }}/{{switch_location_group}}/vlan_db.yml"
+    validation_include_tasks_name: "inc_validate_vlan_db_tasks.yml"
+    validation_flag_filename: "vlan_db.okay"
+    validation_result: false
+  delegate_to: localhost

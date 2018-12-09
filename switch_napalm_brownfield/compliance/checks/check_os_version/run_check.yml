@@ -1,0 +1,24 @@
+---
+
+# HEADER
+- name: Generate Header 
+  template: 
+    src: "{{ header_template_name }}"
+    dest: "{{ header_output_name }}"
+  run_once: yes
+  delegate_to: localhost
+
+# DATA
+- name: Generate output for current host
+  template: 
+    src: "{{ data_template_name }}"
+    dest: "{{ data_output_name }}"
+  delegate_to: localhost
+
+# FOOTER
+- name: Generate footer Output
+  template: 
+    src: "{{ footer_template_name }}"
+    dest: "{{ footer_output_name }}"
+  run_once: yes
+  delegate_to: localhost

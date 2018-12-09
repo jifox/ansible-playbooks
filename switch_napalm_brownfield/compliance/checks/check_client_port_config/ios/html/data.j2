@@ -1,0 +1,6 @@
+{% if is_compliant %}
+{%    set statusline='<td>Ja</td>' %}
+{% else %}
+{%    set statusline='<td bgcolor="#ED5466">Nein</td>' %}
+{% endif %}
+<tr><td>{{ inventory_hostname | e}}</td>{{ statusline }}</tr>

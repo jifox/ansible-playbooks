@@ -1,0 +1,59 @@
+{% set ns = namespace() %}
+{% set ns.is_first = true %}
+{% set ns.devices_list = [] %}
+{% set ns.devices_intf_list = [] %}
+{% set ns.devices_po_list = [] %}
+{% set ns.errors_list = [] %}
+{% for li in ['check_device_list', 'check_intf_list'] %}
+{%   for ul in switch_uplinks %}
+{%     set dev = ul.split('_') %}
+{%     set dic = switch_uplinks[ul] %}
+{%     set utype = dic.uplink_type | default('channel') %}
+{%     set linktype = dic.channel_linktype | default('active') %}
+{%     set is_my_device = false %}
+{%     set nvlan = dic.native_vlan | default(switchport_default_vlan_id) %}
+{%     set avlan = dic.allowed_vlans | default(uplink_default_allowed_vlans) %}
+{%     set rguard = dic.root_guard | default(false) %}
+{%     if li == 'check_device_list' %}
+{%       set ns.devices_list = ns.devices_list + [dev[0]] %}
+{%       set ns.devices_list = ns.devices_list + [dev[1]] %}
+{%       if utype == 'channel' %}
+{%           set ns.devices_po_list = ns.devices_po_list + [dev[0] ~ '_' ~ dic.channel_nr_left] %}
+{%           set ns.devices_po_list = ns.devices_po_list + [dev[1] ~ '_' ~ dic.channel_nr_right] %}
+{%       endif %}
+{%     elif li == 'check_intf_list' %}
+{%       for i in range(0, dic.interfaces_left | length) %}
+{%         set ns.devices_intf_list = ns.devices_intf_list + [dev[0] ~ '_' ~ dic.interfaces_left[i]] %}
+{%         set ns.devices_intf_list = ns.devices_intf_list + [dev[1] ~ '_' ~ dic.interfaces_right[i]] %}
+{%       endfor %}
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+---
+
+check_device_list:
+{% for i in ns.devices_list | unique | sort %}
+  - "{{ i }}"
+{%       endfor %}
+
+{% set ns.curr_dev = "" %}
+check_intf_list:
+{% for i in ns.devices_intf_list | sort %}
+{%     set val = i.split('_') %}
+{%     if val[0] !=  ns.curr_dev %}
+  "{{ val[0] }}":
+{%       set ns.curr_dev = val[0] %}
+{%     endif %}
+    - "{{ val[1] }}"
+{% endfor %}
+
+{% set ns.curr_dev = "" %}
+check_device_channel_nr:
+{% for i in ns.devices_po_list | sort %}
+{%     set val = i.split('_') %}
+{%     if val[0] !=  ns.curr_dev %}
+  "{{ val[0] }}":
+{%       set ns.curr_dev = val[0] %}
+{%     endif %}
+    - "{{ val[1] }}"
+{% endfor %}

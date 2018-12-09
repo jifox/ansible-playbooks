@@ -1,0 +1,48 @@
+---
+#
+# file: inc_config_section_ios_banner_handler.yml
+#
+# Extract the banner configuration in a format that is compatible with napalm_config
+#
+# Parameters:
+#   src_config:    device configuration as retruned from 'show running-config'
+#   template_dest: output filename from template
+#   unmanaged_config_dest: Destinatation filenane for src_config content
+#   remove_only: true (optional). if set to true the banner will not be extracted
+
+- assert:
+    msg: "One or more Missing Parameters [ template_dest | banner_name | src_config | unmanaged_config_dest]"
+    that:
+      - template_dest is defined
+      - banner_name is defined
+      - src_config is defined
+      - unmanaged_config_dest is defined
+  delegate_to: localhost
+
+- name: Extract ios banner from src_config
+  include_tasks: "{{ include_dir }}/inc_template.yml"
+  vars:
+    template_name: "config_section_ios_banner_extractor.j2"
+    # show_result: true
+  when:
+    - src_config.find('banner ' ~ banner_name ~ ' ^C') != -1
+    - remove_only is not defined or not remove_only
+  check_mode: false
+  delegate_to: localhost
+  register: banner_result
+
+- name: Remove banner from src_config
+  block:
+    - include_tasks: "{{ include_dir }}/inc_template.yml"
+      vars:
+        template_name: "config_section_ios_banner_remover.j2"
+        template_dest: "{{ unmanaged_config_dest }}"
+      changed_when: false
+
+    - set_fact:
+        src_config: "{{ lookup('file', unmanaged_config_dest ) }}"
+      changed_when: false
+  when:
+    - src_config.find('banner ' ~ banner_name ~ ' ^C') != -1
+  check_mode: false
+  delegate_to: localhost

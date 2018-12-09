@@ -1,0 +1,11 @@
+---
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+
+    - name: Validate vlan datastructure
+      include_tasks: "{{ include_dir }}/inc_validate_uplinks_db.yml"
+      check_mode: false
+      delegate_to: localhost

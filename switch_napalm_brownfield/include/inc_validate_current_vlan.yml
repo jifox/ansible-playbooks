@@ -1,0 +1,35 @@
+---
+#
+# file: include/inc_validate_current_vlan.yml
+#
+#   is part of the task 'inc_validate_vlan_db.yml'
+#
+# Parameters:
+#   current_vlan:    contains the vlan definition dictionary to check
+#   current_vlan_id: contains the vlan_id for the above dictionary
+
+- assert:
+    msg: "Incorrect vlan_id '{{ current_vlan_id }}''. Must be an number between '1' and '4094'"
+    that:
+      - current_vlan_id|int >= 1
+      - current_vlan_id|int <= 4094
+  delegate_to: localhost
+
+- assert:
+    msg: "Missing vlan_name for vlan {{ current_vlan_id }}"
+    that:
+      - current_vlan.vlan_name is defined
+  delegate_to: localhost
+
+- assert:
+    msg: "Missing vlan_deploy list for vlan {{ current_vlan_id }}"
+    that:
+      - current_vlan.vlan_deploy is defined
+  delegate_to: localhost
+
+- assert:
+    msg: "Invalid entry ({{ item }}) for vlan {{ current_vlan_id }}"
+    that:
+      - item in vlan_db.vlan_groups
+  loop: "{{ current_vlan.vlan_deploy }}"
+  delegate_to: localhost

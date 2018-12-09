@@ -1,0 +1,5 @@
+vlan_names_list:
+{% for vl in vlan_db.vlan_defines %}
+{%   set vldata=vlan_db.vlan_defines[vl] %}
+  - {{ vldata.vlan_name }}
+{% endfor %}

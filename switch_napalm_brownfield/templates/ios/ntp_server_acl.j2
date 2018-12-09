@@ -1,0 +1,17 @@
+ip access-list standard NTP
+{% if  management_vlan_id is defined and management_vlan_net_acl is defined %}
+ permit {{ management_vlan_net_acl }}
+{% endif %}
+{% for ntp in ntp_servers %}
+  {% if ntp.dns != "" %}
+ permit {{ lookup('dig', ntp.dns) }}
+  {% else %}
+ permit {{ ntp.ip }}
+  {% endif %}
+{% endfor %}
+!
+ntp access-group peer NTP
+ntp access-group serve NTP
+ntp access-group serve-only NTP
+ntp access-group query-only NTP
+!

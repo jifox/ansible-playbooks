@@ -1,0 +1,8 @@
+---
+# HEADER
+- name: Generate Header 
+  template: 
+    src: "{{ header_template_name }}"
+    dest: "{{ header_output_name }}"
+  run_once: yes
+  delegate_to: localhost

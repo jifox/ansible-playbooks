@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+{% set date_time = ('' ~ template_run_date).split('.')[0] %}
+<title>Compliance Report vom: {{ date_time }}</title>
+    <style type="text/css">
+        .TFtable{
+            border-collapse:collapse;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .TFtable th{
+            padding:7px; border:#4e95f4 2px solid;
+            font-weight: bold;
+        }
+        .TFtable td{
+            padding:7px; border:#4e95f4 1px solid;
+        }
+        /* provide some minimal visual accomodation for IE8 and below */
+        .TFtable tr{
+            background: #b8d1f3;
+        }
+        /*  Define the background color for all the ODD background rows  */
+        .TFtable tr:nth-child(odd){
+            background: #b8d1f3;
+        }
+        /*  Define the background color for all the EVEN background rows  */
+        .TFtable tr:nth-child(even){
+            background: #dae5f4;
+        }
+    </style>
+</head>
+<body>
+<h1>{{ inventory_hostname }} - Freie Client-Switchports Detail-Report</h1><p>
+<font size=5 font-family="Arial, Helvetica, sans-serif">Standort: <b>{{ napalm_snmp_information.location }}</font></b><p>
+Report vom: {{ date_time }}<p>
+<hr style="height:3px">
+
+<table class="TFtable">
+	<tr><th>Switchport</th><th>Beschreibung</th><th>Frei</th><th>Type</th><th>vlan</th><th>Voice</th><th>Zeitraum</th></tr>
+{% set nsu = namespace(uptime=textfsm_version_info[0].UPTIME | replace('weeks', 'Wo.') | replace('week', 'Wo.') | replace('days', 'T.') | replace('day', 'T.') | replace('hours', 'h') | replace('hour', 'h') | replace('minutes', 'm') | replace('minute', 'm')) %}
+{% set nsf = namespace(free_ports = 0) %}
+{% set nsa = namespace(all_ports = 0) %}
+{% for intf in napalm_interfaces_counters %}
+{%   if intf | regex_search( client_ports_regex ) %}
+{%     set nsa.all_ports = nsa.all_ports + 1 %}
+{%     if napalm_interfaces_counters[intf].rx_octets == 0 and napalm_interfaces_counters[intf].rx_octets == 0 %}
+{%       set nsf.free_ports = nsf.free_ports +1 %}
+{%       set is_free_status = '<td bgcolor=#7df442>Frei</td>' %}
+{%     else %}
+{%       set is_free_status = '<td>&nbsp;</td>' %}
+{%     endif %}
+
+    <tr>
+        <td>{{ intf }}</td>
+        <td>{{ textfsm_show_run_interfaces_part | selectattr('interface_name', 'equalto', intf) | map(attribute='description') | first }}</td>
+        {{ is_free_status }}
+        <td>{{ textfsm_show_run_interfaces_part | selectattr('interface_name', 'equalto', intf) | map(attribute='port_mode') | first }}</td>
+        <td>{{ textfsm_show_run_interfaces_part | selectattr('interface_name', 'equalto', intf) | map(attribute='vlan_access') | first }}</td>
+        <td>{{ textfsm_show_run_interfaces_part | selectattr('interface_name', 'equalto', intf) | map(attribute='vlan_voice') | first }}</td>
+{%        if textfsm_show_interfaces | selectattr('INTERFACE', 'equalto', intf) | map(attribute='LAST_COUNTER_CLEAR') | first == 'never' %}            <td>{{ nsu.uptime }}</td>
+{%        else %}
+        <td>{{ textfsm_show_interfaces | selectattr('INTERFACE', 'equalto', intf) | map(attribute='LAST_COUNTER_CLEAR') | first }}</td>
+{%        endif %}
+    </tr>
+{%   endif %}
+{% endfor %}
+</table>
+&nbsp;<p>
+<table style="font-family:arial,helvetica,sans-serif; font-size:4;">
+{% if nsa.all_ports == 0 %}
+    <tr><td>Client-Switchports gesamt:</td><td><b>{{ nsa.all_ports }}</b></td><tr>
+    <tr><td>Davon frei:</td><td><b>0</b></td><tr>
+{% else %}
+{%   set percent=(nsf.free_ports * 100.0) / nsa.all_ports %}
+{%   set percent_str = percent | round(1, 'floor') %}
+{%   if percent >= 5.0 %}
+{%     set port_status='<td>' ~ percent_str ~ '</td>' %}
+{%   else %}
+{%     set port_status='<td bgcolor="#ED5466">' ~ percent_str ~ '</td>' %}
+{%   endif %}
+    <tr><td>Client-Switchports gesamt:</td><td><b>{{ nsa.all_ports }}</b></td><tr>
+    <tr><td>Davon frei:</td><td><b><b>{{ nsf.free_ports if nsa.all_ports > 0 else '--' }}</b></td><tr>
+    <tr><td>Prozent frei:</td><td><b><b>{{ percent_str }}%</b></td><tr>
+{% endif %}
+</table>
